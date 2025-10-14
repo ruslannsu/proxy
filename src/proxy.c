@@ -1,4 +1,4 @@
-#include <../include/proxy.h>
+#include <proxy.h>
 #include <stdlib.h>
 
 proxy_t *proxy_create(int port, void *threads) {
