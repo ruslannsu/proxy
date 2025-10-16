@@ -2,23 +2,26 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-logger_t *logger_create(char *file_path, log_level_t log_level) {
-    logger_t *logger = malloc(sizeof(logger_t));
+
+
+logger_t *logger = NULL;
+
+void logger_init(char *file_path, log_level_t log_level) {
+    logger = malloc(sizeof(logger_t));
     if (!logger) {
-        return NULL;
+        exit(1);
     }
 
     logger->log_level = log_level;
 
     logger->log_file = open(file_path, O_CREAT | O_RDWR | O_APPEND, 0644);
     if (logger->log_file == -1) {
-        return NULL;
+        exit(1);
     }
-
-    return logger;
+    
 }
 
-void log(logger_t *logger, log_level_t level, char *log_message) {
+void log(log_level_t level, char *log_message) {
     char *level_str;
     switch(level) {
         case INFO:
