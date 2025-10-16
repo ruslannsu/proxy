@@ -3,7 +3,9 @@
 typedef enum log_level_t {
     INFO,
     DEBUG,
+    ERROR,
     FATAL,
+
 }log_level_t;
 
 typedef struct logger_t {

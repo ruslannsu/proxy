@@ -43,6 +43,15 @@ void log(log_level_t level, char *log_message) {
             exit(1);
 
             break;
+        
+        case ERROR:
+            level_str = "[ERROR]";
+
+            write(logger->log_file, level_str, strlen(level_str));
+            write(logger->log_file, log_message, strlen(log_message));
+            write(logger->log_file, "\n", strlen("\n"));
+       
+            break;    
     }
     
 }

@@ -5,14 +5,14 @@
 int main() {
     logger_init("./logger.log", DEBUG);
     if (!logger) {
-        printf("BAD");
-        fflush(stdout);
         return -1;
     }
     
-    proxy_t *proxy = proxy_create(3, NULL);
+    log(INFO, "MAIN: PROCESS START");
 
+    proxy_t *proxy = proxy_create(8080, NULL);
 
-    l
+    sleep(1000);
+    
     return 0;
 }

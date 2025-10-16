@@ -1,7 +1,7 @@
 
 typedef struct proxy_t {
-    int port;
-    void *threads;
+    int socket;
+    void *thread_pool;
 }proxy_t;
 
 
