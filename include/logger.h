@@ -14,8 +14,6 @@ typedef struct logger_t {
 logger_t *logger_create(char *file_path, log_level_t log_level);
  
 
-
-
 void log(logger_t *logger, log_level_t level, char *log_message);
 
 
