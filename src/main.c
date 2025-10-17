@@ -12,7 +12,7 @@ int main() {
 
     proxy_t *proxy = proxy_create(8080, NULL);
 
-    sleep(1000);
+   // sleep(1000);
     
     return 0;
 }
