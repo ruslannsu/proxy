@@ -1,6 +1,8 @@
 #include "logger.h"
 #include <stdlib.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 
 
@@ -21,35 +23,34 @@ void logger_init(char *file_path, log_level_t log_level) {
     
 }
 
-void log(log_level_t level, char *log_message) {
+void log_message(log_level_t level, char *format, ...) {
+    char log_message[1024];
+
+    va_list args;
+
+    va_start(args, format);
+
+    vsnprintf(log_message, sizeof(log_message), format, args);
+
     char *level_str;
+    char log_complete_message[1024];
     switch(level) {
         case INFO:
-            level_str = "[INFO]";
-
-            write(logger->log_file, level_str, strlen(level_str));
-            write(logger->log_file, log_message, strlen(log_message));
-            write(logger->log_file, "\n", strlen("\n"));
-
+            snprintf(log_complete_message, sizeof(log_complete_message), "[INFO] %s \n", log_message);            
+            write(logger->log_file, log_complete_message, strlen(log_complete_message));
             break;
 
         case FATAL:
-            level_str = "[FATAL]";
+            snprintf(log_complete_message, sizeof(log_complete_message), "[FATAL] %s \n", log_message);            
+            write(logger->log_file, log_complete_message, strlen(log_complete_message));
 
-            write(logger->log_file, level_str, strlen(level_str));
-            write(logger->log_file, log_message, strlen(log_message));
-            write(logger->log_file, "\n", strlen("\n"));
-            
             exit(1);
 
             break;
         
         case ERROR:
-            level_str = "[ERROR]";
-
-            write(logger->log_file, level_str, strlen(level_str));
-            write(logger->log_file, log_message, strlen(log_message));
-            write(logger->log_file, "\n", strlen("\n"));
+            snprintf(log_complete_message, sizeof(log_complete_message), "[ERROR] %s \n", log_message);            
+            write(logger->log_file, log_complete_message, strlen(log_complete_message));
        
             break;    
     }

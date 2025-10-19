@@ -4,7 +4,8 @@
 #include <sys/socket.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
+#include <errno.h>
+#include <string.h>
 
 
 
@@ -13,14 +14,14 @@ proxy_t *proxy_create(int port, void *threads) {
 
     proxy_t *proxy = malloc(sizeof(proxy_t));
     if (!proxy) {
-        log(FATAL, "PROXY CREATION: BAD ALLOC");
+        log_message(FATAL, "PROXY CREATION: BAD ALLOC. ERRNO: %s", strerror(errno));
     }
 
     proxy->thread_pool = threads;
 
     proxy->socket = socket(AF_INET, SOCK_STREAM, 0);
     if (proxy->socket == -1) {
-        log(ERROR, "PROXY CREATION: CANT CREATE SOCK");
+        log_message(ERROR, "PROXY CREATION: CANT CREATE SOCK. ERRNO: %s ", strerror(errno));
         return NULL;
     }
 
@@ -31,13 +32,13 @@ proxy_t *proxy_create(int port, void *threads) {
     
     err = bind(proxy->socket, (struct sockaddr*)&addr, sizeof(addr));
     if (err != 0) {
-        log(ERROR, "PROXY CREATION: CANT BIND SOCK");
+        log_message(ERROR, "PROXY CREATION: CANT BIND SOCK. ERRNO: %s", strerror(errno));
         return NULL;
     }
 
     
 
-    log(INFO, "PROXY: CREATION COMPLETE");
+    log_message(INFO, "PROXY: CREATION COMPLETE");
 
     return proxy;
 }

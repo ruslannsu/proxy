@@ -19,7 +19,7 @@ extern logger_t *logger;
 void logger_init(char *file_path, log_level_t log_level);
  
 
-void log(log_level_t level, char *log_message);
+void log_message(log_level_t level, char *format, ...);
 
 
 
