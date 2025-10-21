@@ -12,5 +12,7 @@ int main() {
 
     proxy_t *proxy = proxy_create(8080, NULL);
 
+    proxy_run(proxy);
+    
     return 0;
 }

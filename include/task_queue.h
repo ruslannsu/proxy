@@ -1,6 +1,10 @@
+#include <stdio.h>
+
+
 #define MAX_SIZE 1000000000
 #define START_SIZE 1024
 #define REBALANCE_POINT 0.7
+
 
 typedef struct task_t {
     void (*function)(void*);
@@ -18,3 +22,4 @@ typedef struct task_queue_t {
 }task_queue_t;
 
 task_queue_t *task_queue_create();
+

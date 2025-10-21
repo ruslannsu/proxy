@@ -20,6 +20,18 @@ task_queue_t *task_queue_create() {
     if (!q->tasks) {
         log_message(FATAL, "TASK QUEUE CREATE FAILED. ERRNO: %s", errno);
     }
-    
+
     return q;
 }
+
+
+int task_queue_add(task_queue_t *queue, task_t task) {
+    queue->tasks[queue->tail] = task;
+
+    //TODO:FIX TAIL(CAN BE NO PLACE)
+    ++queue->tail;
+    ++queue->size;
+    //TODO: if size == capacity ...
+    return 0;
+}
+
