@@ -10,7 +10,7 @@ int main() {
 
     log_message(INFO, "PROCESS START");
 
-    proxy_t *proxy = proxy_create(8080, NULL);
+    proxy_t *proxy = proxy_create(8080);;
     if (!proxy) {
         log_message(ERROR, "PROXY CREATE FAILED. ");
     }

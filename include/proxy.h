@@ -3,7 +3,7 @@ typedef struct proxy_t {
     void *thread_pool;
 }proxy_t;
 
-proxy_t *proxy_create(int port, void *threads);
+proxy_t *proxy_create(int port);
 
 void proxy_run(proxy_t *proxy);
 

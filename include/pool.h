@@ -9,3 +9,5 @@ typedef struct thread_pool_t {
 }thread_pool_t;
 
 thread_pool_t *thread_pool_create();
+
+void thread_pool_execute(thread_pool_t *thread_pool);

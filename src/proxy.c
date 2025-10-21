@@ -9,9 +9,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pool.h>
 #include "../lib/picohttpparser/picohttpparser.h"
 
-proxy_t *proxy_create(int port, void *threads) {
+proxy_t *proxy_create(int port) {
     int err;
 
     proxy_t *proxy = malloc(sizeof(proxy_t));
@@ -19,7 +20,11 @@ proxy_t *proxy_create(int port, void *threads) {
         log_message(FATAL, "PROXY CREATION: BAD ALLOC. ERRNO: %s", strerror(errno));
     }
 
-    proxy->thread_pool = threads;
+    proxy->thread_pool = thread_pool_create();
+    if (!proxy->thread_pool) {
+        log_message(FATAL, "PROXY CREATION: THREAD POOL CREATION FAILED");
+    }
+    
 
     proxy->socket = socket(AF_INET, SOCK_STREAM, 0);
     if (proxy->socket == -1) {

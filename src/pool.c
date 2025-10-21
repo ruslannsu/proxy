@@ -15,9 +15,15 @@ thread_pool_t *thread_pool_create() {
         log_message(FATAL, "THREAD POOL CREATE FAILED. ERRNO: %s", errno);
     }
 
-   // thread_pool->task_queue = malloc(sizeof())
+    thread_pool->task_queue = task_queue_create();
+    if (!thread_pool->task_queue) {
+        exit(3);
+    }
+
     return thread_pool;
 }
+
+
 
 
 
