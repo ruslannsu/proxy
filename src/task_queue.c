@@ -2,9 +2,6 @@
 #include <logger.h>
 #include <errno.h>
 
-
-
-
 task_queue_t *task_queue_create() {
     task_queue_t *q = malloc(sizeof(task_queue_t));   
     if (!q) {
@@ -24,14 +21,24 @@ task_queue_t *task_queue_create() {
     return q;
 }
 
+static void *realloc_queue(task_queue_t *queue) {
+    queue->capacity = queue->capacity * REALLOC_COEFF;
+    queue->tasks = realloc(queue->tasks, queue->capacity);
+    if (!queue->tasks) {
+        log_message(FATAL, "QUEUE: REALLOC QUEUE FAILED");
+    }
+} 
 
 int task_queue_add(task_queue_t *queue, task_t task) {
-    queue->tasks[queue->tail] = task;
+    if (queue->capacity == queue->size) {
+        realloc_queue(queue);
+    }
 
-    //TODO:FIX TAIL(CAN BE NO PLACE)
+    queue->tasks[queue->tail] = task;
+    
     ++queue->tail;
     ++queue->size;
-    //TODO: if size == capacity ...
+
     return 0;
 }
 

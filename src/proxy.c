@@ -9,8 +9,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
-
+#include "../lib/picohttpparser/picohttpparser.h"
 
 proxy_t *proxy_create(int port, void *threads) {
     int err;
@@ -28,6 +27,13 @@ proxy_t *proxy_create(int port, void *threads) {
         return NULL;
     }
 
+
+    const int enable = 1;
+    err = setsockopt(proxy->socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+    if (err != 0) {
+        log_message(FATAL, "PROXY CREATION: CANT SETSOCKOPT. ERRNO: %s", strerror(errno));
+    }
+
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
@@ -35,17 +41,15 @@ proxy_t *proxy_create(int port, void *threads) {
     
     err = bind(proxy->socket, (struct sockaddr*)&addr, sizeof(addr));
     if (err != 0) {
-        log_message(ERROR, "PROXY CREATION: CANT BIND SOCK. ERRNO: %s", strerror(errno));
+        log_message(FATAL, "PROXY CREATION: CANT BIND SOCK. ERRNO: %s", strerror(errno));
         return NULL;
     }
-
 
     err = listen(proxy->socket, 3);
     if (err < 0) {
         log_message(FATAL, "PROXY DO NOT LISTEN");
         
     }
-
 
     log_message(INFO, "PROXY: CREATION COMPLETE");
 
@@ -60,12 +64,17 @@ void proxy_run(proxy_t *proxy) {
     socklen_t sock_len = sizeof(addr);
 
     while (1) {
-        err = accept(proxy->socket, (struct sockaddr*)&addr, &sock_len);
-        if (err < 0) { 
+        int sock = accept(proxy->socket, (struct sockaddr*)&addr, &sock_len);
+        if (sock < 0) { 
             log_message(ERROR, "PROXY RUNNING: CONNECTION ACCEPT ERR. ERRNO: %s", strerror(errno));
         }
         
         log_message(INFO, "PROXY NEW CONNECTION WITH ADDR: %s, PORT: %d", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+
+        char buffer[1024];
+        ssize_t bytes_count = recv(sock, buffer, 1024, 0);
+        log_message(INFO, "HTML BYTEX COUNT %d", bytes_count);
+        
     }
     log_message(INFO, "PROXY: STOP RUNNING");
     

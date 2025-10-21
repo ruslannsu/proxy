@@ -7,6 +7,9 @@ SOURCES = $(wildcard $(SRCDIR)/*.c)
 OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
 TARGET = $(BUILDDIR)/proxy
 
+CFLAGS += -Ilib/picohttpparser
+SRCS = src/main.c lib/picohttpparser/picohttpparser.c
+
 .PHONY: all clean run
 
 all: $(TARGET)
