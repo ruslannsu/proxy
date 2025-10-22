@@ -2,6 +2,8 @@
 #include <pthread.h>
 #include <task_queue.h>
 
+#define THREAD_COUNT 1024
+
 typedef struct thread_pool_t {
     pthread_t *threads;
     task_queue_t *task_queue;
@@ -10,4 +12,4 @@ typedef struct thread_pool_t {
 
 thread_pool_t *thread_pool_create();
 
-void thread_pool_execute(thread_pool_t *thread_pool);
+void thread_pool_run(thread_pool_t *thread_pool);

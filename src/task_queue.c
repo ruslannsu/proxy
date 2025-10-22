@@ -9,7 +9,7 @@ task_queue_t *task_queue_create() {
     }
 
     q->head = 0;
-    q->tail = START_SIZE - 1;
+    q->tail = 0;
     q->size = 0;
     q->capacity = START_SIZE;
 
@@ -42,3 +42,16 @@ int task_queue_add(task_queue_t *queue, task_t task) {
     return 0;
 }
 
+int queue_is_empty(task_queue_t *queue) {
+    return queue->size == 0;
+}
+
+
+task_t task_queue_get(task_queue_t *queue) {
+    task_t task = queue->tasks[queue->head];
+
+    ++queue->head;
+    --queue->size;
+
+    return task;
+}

@@ -1,6 +1,8 @@
+#include <pool.h>
+
 typedef struct proxy_t {
     int socket;
-    void *thread_pool;
+    thread_pool_t *thread_pool;
 }proxy_t;
 
 proxy_t *proxy_create(int port);
