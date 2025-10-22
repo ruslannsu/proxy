@@ -27,9 +27,13 @@ thread_pool_t *thread_pool_create() {
 
 static void *reader_routine(void *args) {
     task_queue_t *queue = (task_queue_t*)(args);
-    while (!queue_is_empty(queue)) {    
-        task_t task = task_queue_get(queue);
-        task.function(task.args);
+    while (1) {   
+        if (!queue_is_empty(queue)) { 
+            task_t task = task_queue_get(queue);
+            task.function(task.args);
+            
+        }
+        sleep(3);
     }
 }
 

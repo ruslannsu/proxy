@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <pthread.h>
 
 #define MAX_SIZE 1000000000
 #define START_SIZE 1024
@@ -10,12 +11,14 @@ typedef struct task_t {
     void *args;
 }task_t;
 
+
 typedef struct task_queue_t {
     size_t head;
     size_t tail;
     size_t size;
     size_t capacity;
     task_t *tasks;
+    pthread_mutex_t mutex;
 }task_queue_t;
 
 task_queue_t *task_queue_create();

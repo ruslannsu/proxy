@@ -60,47 +60,42 @@ proxy_t *proxy_create(int port) {
     return proxy;
 }
 static void client_task(void *args) {
-    printf("%s\n", (char*)args);
+    printf("%s", "there");
+    printf("%d\n", *(int*)args);
+    fflush(stdout);
 }
+
+
 
 void proxy_run(proxy_t *proxy) {
     log_message(INFO, "PROXY: RUNNING");
+    int client_sockets[1024];
 
     int err;
     struct sockaddr_in addr;
     socklen_t sock_len = sizeof(addr);
+    thread_pool_run(proxy->thread_pool);
 
-    /*
+    size_t index = 0;
     while (1) {
         int sock = accept(proxy->socket, (struct sockaddr*)&addr, &sock_len);
         if (sock < 0) { 
             log_message(ERROR, "PROXY RUNNING: CONNECTION ACCEPT ERR. ERRNO: %s", strerror(errno));
         }
-        
+
         log_message(INFO, "PROXY NEW CONNECTION WITH ADDR: %s, PORT: %d", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
-        char buffer[1024];
-        ssize_t bytes_count = recv(sock, buffer, 1024, 0);
-        log_message(INFO, "HTML BYTEX COUNT %d", bytes_count);
-        
-    }
-    */
+        client_sockets[index] = sock;
 
+        task_t task = {.args=&(client_sockets[index]), .function=client_task};
 
-    task_t task = {.args="lol", .function = client_task};
+        task_queue_add(proxy->thread_pool->task_queue, task);
     
-    err = task_queue_add(proxy->thread_pool->task_queue, task);
-    if (err != 0) {
-        log_message(FATAL, "...");
+        ++index;
     }
-    task_t task2 = {.args="lol2", .function = client_task};
-        err = task_queue_add(proxy->thread_pool->task_queue, task2);
-
-        task_t task3 = {.args="lol3", .function = client_task};
-            err = task_queue_add(proxy->thread_pool->task_queue, task3);
 
 
-    thread_pool_run(proxy->thread_pool);
+    
 
     sleep(10);
     log_message(INFO, "PROXY: STOP RUNNING");
