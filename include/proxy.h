@@ -1,3 +1,5 @@
+#include <poll.h>
+
 typedef struct proxy_t {
     int socket;
     void *thread_pool;

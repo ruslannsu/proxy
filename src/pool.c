@@ -5,7 +5,7 @@
 
 
 thread_pool_t *thread_pool_create() {
-    thread_pool_t *thread_pool = malloc(sizeof(thread_pool));
+    thread_pool_t *thread_pool = malloc(sizeof(thread_pool_t));
     if (!thread_pool) {
         log_message(FATAL, "THREAD POOL CREATE FAILED. ERRNO: %s", errno);
     }

@@ -11,6 +11,8 @@
 #include <arpa/inet.h>
 #include <pool.h>
 #include "../lib/picohttpparser/picohttpparser.h"
+#include <poll.h>
+#include <task_queue.h>
 
 proxy_t *proxy_create(int port) {
     int err;
@@ -62,25 +64,47 @@ proxy_t *proxy_create(int port) {
 }
 
 void proxy_run(proxy_t *proxy) {
+
     log_message(INFO, "PROXY: RUNNING");
 
     int err;
     struct sockaddr_in addr;
     socklen_t sock_len = sizeof(addr);
 
+    /*
+    int sock;
     while (1) {
-        int sock = accept(proxy->socket, (struct sockaddr*)&addr, &sock_len);
+
+        sock = accept(proxy->socket, (struct sockaddr*)&addr, &sock_len);
         if (sock < 0) { 
             log_message(ERROR, "PROXY RUNNING: CONNECTION ACCEPT ERR. ERRNO: %s", strerror(errno));
         }
         
         log_message(INFO, "PROXY NEW CONNECTION WITH ADDR: %s, PORT: %d", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-
-        char buffer[1024];
-        ssize_t bytes_count = recv(sock, buffer, 1024, 0);
-        log_message(INFO, "HTML BYTEX COUNT %d", bytes_count);
         
+      //  client_t client = {.addr=addr, .socket=sock};
+    //    task_t task = {.function=client_task, .args=(void*)&client};
+
+
+
     }
+    */
+ //   task_t task = {.args = "hello", .function = client_task};
+
+ //   task_queue_add(proxy->thread_pool->task_queue, task);
+
+    
+
+    
     log_message(INFO, "PROXY: STOP RUNNING");
     
+    
+    
+    
+
+    
+}
+
+static void client_task(void *args) {
+    printf("%s \n" , (char*)args);
 }
