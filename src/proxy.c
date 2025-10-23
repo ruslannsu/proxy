@@ -60,9 +60,15 @@ proxy_t *proxy_create(int port) {
     return proxy;
 }
 static void client_task(void *args) {
-    printf("%s", "there");
-    printf("%d\n", *(int*)args);
-    fflush(stdout);
+    int err;
+    char buffer[1025];
+    int client_socket = *(int*)args;
+    printf("%d\n", client_socket);
+    err = recv(client_socket, buffer, 1024, 0);
+
+    
+    printf("%s %s %s \n", "thats buffer inner", buffer,  strerror(errno));
+    
 }
 
 
