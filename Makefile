@@ -3,12 +3,12 @@ CFLAGS = -Iinclude -Wall -Wextra -std=c99 -pedantic
 SRCDIR = src
 INCDIR = include
 BUILDDIR = build
-SOURCES = $(wildcard $(SRCDIR)/*.c)
-OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
+
+SOURCES = $(wildcard $(SRCDIR)/*.c) lib/picohttpparser/picohttpparser.c
+OBJECTS = $(SOURCES:%.c=$(BUILDDIR)/%.o)
 TARGET = $(BUILDDIR)/proxy
 
 CFLAGS += -Ilib/picohttpparser
-SRCS = src/main.c lib/picohttpparser/picohttpparser.c
 
 .PHONY: all clean run
 
@@ -20,7 +20,8 @@ $(BUILDDIR):
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^
 
-$(BUILDDIR)/%.o: $(SRCDIR)/%.c | $(BUILDDIR)
+$(BUILDDIR)/%.o: %.c | $(BUILDDIR)
+	@mkdir -p $(dir $@)  # Создаем поддиректории если нужно
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
