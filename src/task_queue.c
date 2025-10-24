@@ -1,15 +1,14 @@
 #include <task_queue.h>
 #include <logger.h>
 #include <errno.h>
+#include <string.h>
 
-
-//TODO: FIX: POSIX THREADS DO NOT FILL ERRNO!!!
-
+//TODO: FIX: POSIX THREADS DO NOT FILL ERRNO!!! ----FIXED(mb)
 
 task_queue_t *task_queue_create() {
     task_queue_t *q = malloc(sizeof(task_queue_t));   
     if (!q) {
-        log_message(FATAL, "TASK QUEUE CREATE FAILED. ERRNO: %s", errno);
+        log_message(FATAL, "TASK QUEUE CREATE FAILED. ERRNO: %s", strerror(errno));
     }
 
     q->head = 0;
@@ -19,14 +18,14 @@ task_queue_t *task_queue_create() {
 
     q->tasks = malloc(sizeof(task_t) * START_SIZE);
     if (!q->tasks) {
-        log_message(FATAL, "TASK QUEUE CREATE FAILED. ERRNO: %s", errno);
+        log_message(FATAL, "TASK QUEUE CREATE FAILED. ERRNO: %s", strerror(errno));
     }
 
     int err;
     
     err = pthread_mutex_init(&q->mutex, NULL);
     if (err != 0) {
-        log_message(FATAL, "TASK QUEUE CREATE FAILED. MUTEX INIT FAILED. ERRNO: %s", errno);
+        log_message(FATAL, "TASK QUEUE CREATE FAILED. MUTEX INIT FAILED. ERR: %s", strerror(err));
     }
 
     return q;
@@ -45,7 +44,7 @@ int task_queue_add(task_queue_t *queue, task_t task) {
 
     err = pthread_mutex_lock(&queue->mutex);
     if (err != 0) {
-        log_message(FATAL, "QUEUE ADD FAILED: MUTEX LOCK FAILED. ERRNO: %s", errno);
+        log_message(FATAL, "QUEUE ADD FAILED: MUTEX LOCK FAILED. ERR: %s", strerror(err));
     }
 
     if (queue->capacity == queue->size) {
@@ -59,7 +58,7 @@ int task_queue_add(task_queue_t *queue, task_t task) {
 
     err = pthread_mutex_unlock(&queue->mutex);
     if (err != 0) {
-        log_message(FATAL, "QUEUE ADD FAILED: MUTEX UNLOCK FAILED. ERRNO: %s", errno);
+        log_message(FATAL, "QUEUE ADD FAILED: MUTEX UNLOCK FAILED. ERRN: %s", strerror(err));
     }
 
     return 0;
@@ -75,7 +74,7 @@ task_t task_queue_get(task_queue_t *queue) {
 
     err = pthread_mutex_lock(&queue->mutex);
     if (err != 0) {
-        log_message(FATAL, "QUEUE ADD FAILED: MUTEX LOCK FAILED. ERRNO: %s", errno);
+        log_message(FATAL, "QUEUE ADD FAILED: MUTEX LOCK FAILED. ERR: %s", strerror(err));
     }
 
     task_t task;
@@ -86,7 +85,7 @@ task_t task_queue_get(task_queue_t *queue) {
 
         err = pthread_mutex_unlock(&queue->mutex);
         if (err != 0) {
-            log_message(FATAL, "QUEUE ADD FAILED: MUTEX UNLOCK FAILED. ERRNO: %s", errno);
+            log_message(FATAL, "QUEUE ADD FAILED: MUTEX UNLOCK FAILED. ERR: %s", strerror(err));
         }
         
         return task;
@@ -99,7 +98,7 @@ task_t task_queue_get(task_queue_t *queue) {
 
     err = pthread_mutex_unlock(&queue->mutex);
     if (err != 0) {
-        log_message(FATAL, "QUEUE ADD FAILED: MUTEX UNLOCK FAILED. ERRNO: %s", errno);
+        log_message(FATAL, "QUEUE ADD FAILED: MUTEX UNLOCK FAILED. ERR: %s", strerror(err));
     }
 
     return task;

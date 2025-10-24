@@ -24,13 +24,12 @@ thread_pool_t *thread_pool_create() {
     return thread_pool;
 }
 
-
 static void *reader_routine(void *args) {
     task_queue_t *queue = (task_queue_t*)(args);
     while (1) {   
         
         task_t task = task_queue_get(queue);
-        
+
         if ((task.args == NULL) && (task.function == NULL))  {
             continue;
         }
@@ -44,7 +43,8 @@ static void *reader_routine(void *args) {
 
 void thread_pool_run(thread_pool_t *thread_pool) {
     int err;
-    for (size_t i = 0; i < 5; ++i) {
+
+    for (size_t i = 0; i < THREAD_COUNT; ++i) {
         err = pthread_create(&thread_pool->threads[i], NULL, reader_routine, thread_pool->task_queue);
         if (err != 0) { 
             log_message(FATAL, "THREAD POOL RUN FAILED", strerror(err));

@@ -2,7 +2,7 @@
 #include <pthread.h>
 #include <task_queue.h>
 
-#define THREAD_COUNT 1024
+#define THREAD_COUNT 10
 
 typedef struct thread_pool_t {
     pthread_t *threads;

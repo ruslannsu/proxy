@@ -24,13 +24,11 @@ proxy_t *proxy_create(int port) {
         log_message(FATAL, "PROXY CREATION: THREAD POOL CREATION FAILED");
     }
     
-
     proxy->socket = socket(AF_INET, SOCK_STREAM, 0);
     if (proxy->socket == -1) {
         log_message(ERROR, "PROXY CREATION: CANT CREATE SOCK. ERRNO: %s ", strerror(errno));
         return NULL;
     }
-
 
     const int enable = 1;
     err = setsockopt(proxy->socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
@@ -59,6 +57,7 @@ proxy_t *proxy_create(int port) {
 
     return proxy;
 }
+
 static void client_task(void *args) {
     int err;
     char buffer[1025];
@@ -68,10 +67,7 @@ static void client_task(void *args) {
 
     
     printf("%s %s %s \n", "thats buffer inner", buffer,  strerror(errno));
-    
 }
-
-
 
 void proxy_run(proxy_t *proxy) {
     log_message(INFO, "PROXY: RUNNING");
@@ -99,9 +95,6 @@ void proxy_run(proxy_t *proxy) {
     
         ++index;
     }
-
-
-    
 
     sleep(10);
     log_message(INFO, "PROXY: STOP RUNNING");

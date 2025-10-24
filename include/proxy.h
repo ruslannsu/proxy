@@ -3,6 +3,7 @@
 typedef struct proxy_t {
     int socket;
     thread_pool_t *thread_pool;
+    thread_pool_t *server_thread_pool;
 }proxy_t;
 
 proxy_t *proxy_create(int port);
