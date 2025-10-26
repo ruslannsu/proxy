@@ -35,8 +35,7 @@ static void *reader_routine(void *args) {
         }
 
         task.function(task.args);
-            
-    
+
         //sleep(3);
     }
 }

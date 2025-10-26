@@ -6,6 +6,11 @@ typedef struct proxy_t {
     thread_pool_t *server_thread_pool;
 }proxy_t;
 
+typedef struct sockets_t {
+    int *proxy_socket;
+    int *client_socket;
+} sockets_t;
+
 proxy_t *proxy_create(int port);
 
 void proxy_run(proxy_t *proxy);
