@@ -68,8 +68,13 @@ proxy_t *proxy_create(int port) {
 
 
 
-static void upstream_connection_create(int client_socket, char *ip) {
+static int upstream_connection_create(char *ip) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == -1) {
+        log_message(ERROR, "PROXY UPSTREAM SOCKET CREATION FAILED. .ERRNO: %s", strerror(errno));
+        return -1;
+    }
+    
     struct sockaddr_in server_addr;
     int port = 80;
     char *ip_ = "213.109.147.119";
@@ -82,10 +87,11 @@ static void upstream_connection_create(int client_socket, char *ip) {
     int err;
 
     err = connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
-    if (err != 1) {
-        printf("%s %s  \n", "connected to upstream", strerror(errno));
-        fflush(stdout);
+    if (err != 0) {
+        log_message(ERROR, "PROXY UPSTREAM 'CONNECT' FAILED. ERRNO: %s", strerror(errno));
+        return -1;
     }
+    return sock;
     
 }
 
@@ -148,7 +154,6 @@ static void client_task(void *args) {
     int err;
     
     sockets_t sockets = *(sockets_t*)args;
-
     
     char buf[4096], *method, *path;
     int pret, minor_version;
@@ -156,8 +161,6 @@ static void client_task(void *args) {
     size_t buflen = 0, prevbuflen = 0, method_len, path_len, num_headers;
     ssize_t rret;
     
-    
-
     while (1) {
         /* read the request */
         while ((rret = read(sockets.client_socket, buf + buflen, sizeof(buf) - buflen)) == -1 && errno == EINTR);
@@ -176,31 +179,17 @@ static void client_task(void *args) {
             return;
         /* request is incomplete, continue the loop */
         assert(pret == -2);
-        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!%s\n", headers[0].value);
-    printf("%c --!!! ", headers[0]);
-    fflush(stdout);
+        fflush(stdout);
 
-
-  //  resolve_hostname(headers[0].value, (int)headers[0].value_len);
-    if (buflen == sizeof(buf))
-            return;
+        if (buflen == sizeof(buf))
+                return;
     }
-
-    printf("request is %d bytes long\n", pret);
-    printf("method is %.*s\n", (int)method_len, method);
-    printf("path is %.*s\n", (int)path_len, path);
-    printf("HTTP version is 1.%d\n", minor_version);
-    printf("headers:\n");
 
     for (int i = 0; i != num_headers; ++i) {
         printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
             (int)headers[i].value_len, headers[i].value);
     }  
 
-    
-
-   
-    
 
     char ip_buff[INET_ADDRSTRLEN];
     resolve_hostname(headers[0].value, (int)headers[0].value_len, ip_buff);
@@ -209,7 +198,35 @@ static void client_task(void *args) {
     printf("%s ip buff", ip_buff);
     fflush(stdout);
     
-    upstream_connection_create(sockets.proxy_socket, ip_buff);
+    int ups_sock = upstream_connection_create(ip_buff);
+    if (ups_sock == -1) {
+        log_message(ERROR, "CONNECTION TO UPSTREAM FAILED: ip: %s", ip_buff);
+        return;
+    }
+
+    char request[4096];
+    int req_len = snprintf(request, sizeof(request),
+    "GET %s HTTP/1.1\r\n"
+    "Host: %s\r\n"
+    "Connection: close\r\n"
+    "User-Agent: MyProxy/1.0\r\n"
+    "\r\n",
+    path, headers[0].value);
+
+    err = send(ups_sock, request, req_len, 0);
+    if (err == -1) {
+        log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
+    }
+
+    char ups_buf[4096];
+
+    err = recv(ups_sock, ups_buf, 4096, 0);
+    if (err == -1) {
+        log_message(ERROR, "RECV FROM UPSTREAM FAILED, ERRNO: %s", strerror(errno));
+
+    } 
+    
+    printf("there: %s\n", ups_buf);
     
 }
 
