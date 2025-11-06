@@ -67,6 +67,75 @@ proxy_t *proxy_create(int port) {
 }
 
 
+static int http_response_parse(int sock, char **http_response, size_t *http_response_size) {
+    size_t size = 10000;
+    char *buf = malloc(sizeof(char) * size);
+    char *method, *path;
+    char *msg;
+    size_t msg_len;
+    int status;
+
+    int pret, minor_version;
+    struct phr_header headers[100];
+    size_t buflen = 0, prevbuflen = 0, method_len, path_len, num_headers;
+    ssize_t rret;
+
+    while (1) {
+        while ((rret = read(sock, buf + buflen, size - buflen)) == -1 && errno == EINTR);
+        if (rret <= 0)
+            return -1;
+        prevbuflen = buflen;
+        buflen += rret;
+        num_headers = sizeof(headers) / sizeof(headers[0]);
+        
+        pret = phr_parse_response(buf, buflen, &minor_version, &status, &msg, &msg_len, headers, &num_headers, prevbuflen);
+
+        if (pret > 0)
+            break; 
+        else if (pret == -1)
+            return -1;
+
+        assert(pret == -2);
+        if (buflen == size)
+            return -1;
+    }
+
+    size_t http_body_size;
+    for (size_t i = 0; i != num_headers; ++i) {
+        if (strncmp(headers[i].name, "Content-Length", 14) == 0) {
+            printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name, (int)headers[i].value_len, headers[i].value);
+            size_t val_size = headers[i].value_len;
+            char val_buf[val_size];
+            memcpy(val_buf, headers[i].value, val_size);
+            http_body_size = atoi(val_buf);
+            break;
+        }
+    }
+
+    size_t bytes_left = http_body_size - (buflen - pret);
+    size_t bytes_count = 0;
+    size_t read_bytes_count = 1024;
+
+    while (bytes_count != bytes_left) {
+        if ((bytes_left - bytes_count) > read_bytes_count) {
+            read_bytes_count = bytes_left - bytes_count;
+        }
+        bytes_count += read(sock, buf + buflen + bytes_count, read_bytes_count);
+    }
+
+    /*
+    printf("headers size %d, buflen %d \n", pret, buflen);
+    printf("successful mb?  http_body_size %d, left: %d, count %d", http_body_size, bytes_left, bytes_count);
+    fflush(stdout);
+    */
+
+    *http_response = buf;
+    *http_response_size = http_body_size;
+
+    return 0;
+}
+
+
 
 static int upstream_connection_create(char *ip) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -77,7 +146,9 @@ static int upstream_connection_create(char *ip) {
     
     struct sockaddr_in server_addr;
     int port = 80;
-    char *ip_ = "213.109.147.119";
+  //  char *ip_ = "213.109.147.119";
+  
+    char *ip_ = ip;
     memset(&server_addr, 0, sizeof(server_addr));
     
     server_addr.sin_family = AF_INET;
@@ -120,9 +191,6 @@ void resolve_hostname(const char *hostname, size_t len, char ip[]) {
         clean[--i] = '\0';
     }
     
-    printf("Resolving: '%s' (original length: %zu, clean length: %zu)\n", 
-           clean, actual_len, strlen(clean));
-    
     struct addrinfo hints, *result, *rp;
     char ip_str[INET_ADDRSTRLEN];
     
@@ -132,7 +200,6 @@ void resolve_hostname(const char *hostname, size_t len, char ip[]) {
     
     int status = getaddrinfo(clean, NULL, &hints, &result);
     if (status != 0) {
-        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
         return;
     }
     
@@ -185,19 +252,10 @@ static void client_task(void *args) {
                 return;
     }
 
-    for (int i = 0; i != num_headers; ++i) {
-        printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
-            (int)headers[i].value_len, headers[i].value);
-    }  
-
-
     char ip_buff[INET_ADDRSTRLEN];
     resolve_hostname(headers[0].value, (int)headers[0].value_len, ip_buff);
     ip_buff[INET_ADDRSTRLEN] = '\0';
-    
-    printf("%s ip buff", ip_buff);
-    fflush(stdout);
-    
+     
     int ups_sock = upstream_connection_create(ip_buff);
     if (ups_sock == -1) {
         log_message(ERROR, "CONNECTION TO UPSTREAM FAILED: ip: %s", ip_buff);
@@ -216,18 +274,19 @@ static void client_task(void *args) {
     err = send(ups_sock, request, req_len, 0);
     if (err == -1) {
         log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
+        return;
     }
 
-    char ups_buf[4096];
-
-    err = recv(ups_sock, ups_buf, 4096, 0);
-    if (err == -1) {
-        log_message(ERROR, "RECV FROM UPSTREAM FAILED, ERRNO: %s", strerror(errno));
-
-    } 
+    char ups_buf[1500000];
     
-    printf("there: %s\n", ups_buf);
+    char *http_response;
+    size_t http_response_size;
+    http_response_parse(ups_sock, &http_response, &http_response_size);
+
+    printf("size %d ", http_response_size);
     
+    close(ups_sock);
+
 }
 
 
