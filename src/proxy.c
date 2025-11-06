@@ -68,7 +68,7 @@ proxy_t *proxy_create(int port) {
 
 
 static int http_response_parse(int sock, char **http_response, size_t *http_response_size) {
-    size_t size = 10000;
+    size_t size = 100000000;
     char *buf = malloc(sizeof(char) * size);
     char *method, *path;
     char *msg;
@@ -112,16 +112,32 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
         }
     }
 
+    
     size_t bytes_left = http_body_size - (buflen - pret);
     size_t bytes_count = 0;
     size_t read_bytes_count = 1024;
 
+    printf("%d %d %d %d \n", bytes_left, pret, buflen ,1);
+    int err;
+
     while (bytes_count != bytes_left) {
+        if (buflen >= http_body_size + pret) {
+            break;
+        }
+
         if ((bytes_left - bytes_count) > read_bytes_count) {
             read_bytes_count = bytes_left - bytes_count;
         }
-        bytes_count += read(sock, buf + buflen + bytes_count, read_bytes_count);
+        
+        err = read(sock, buf + buflen + bytes_count, read_bytes_count);
+        if (err < 0) {
+            break;
+        }
+
+        bytes_count += err;
     }
+    
+    fflush(stdout);
 
     /*
     printf("headers size %d, buflen %d \n", pret, buflen);
@@ -130,7 +146,11 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
     */
 
     *http_response = buf;
-    *http_response_size = http_body_size;
+    *http_response_size = http_body_size + pret;
+
+    printf("%lld \n", http_body_size + pret);
+    fflush(stdout);
+    
 
     return 0;
 }
@@ -220,6 +240,9 @@ void resolve_hostname(const char *hostname, size_t len, char ip[]) {
 static void client_task(void *args) {
     int err;
     
+    printf("thread id = %d", gettid());
+
+    
     sockets_t sockets = *(sockets_t*)args;
     
     char buf[4096], *method, *path;
@@ -252,6 +275,18 @@ static void client_task(void *args) {
                 return;
     }
 
+
+        printf("request is %d bytes long\n", pret);
+    printf("method is %.*s\n", (int)method_len, method);
+    printf("path is %.*s\n", (int)path_len, path);
+    printf("HTTP version is 1.%d\n", minor_version);
+    printf("headers:\n");
+    for (size_t i = 0; i != num_headers; ++i) {
+        printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
+            (int)headers[i].value_len, headers[i].value);
+    }
+
+
     char ip_buff[INET_ADDRSTRLEN];
     resolve_hostname(headers[0].value, (int)headers[0].value_len, ip_buff);
     ip_buff[INET_ADDRSTRLEN] = '\0';
@@ -264,10 +299,8 @@ static void client_task(void *args) {
 
     char request[4096];
     int req_len = snprintf(request, sizeof(request),
-    "GET %s HTTP/1.1\r\n"
-    "Host: %s\r\n"
+    "GET %s HTTP/1.0\r\n"
     "Connection: close\r\n"
-    "User-Agent: MyProxy/1.0\r\n"
     "\r\n",
     path, headers[0].value);
 
@@ -277,16 +310,23 @@ static void client_task(void *args) {
         return;
     }
 
-    char ups_buf[1500000];
-    
     char *http_response;
     size_t http_response_size;
     http_response_parse(ups_sock, &http_response, &http_response_size);
 
-    printf("size %d ", http_response_size);
+    err = send(sockets.client_socket, http_response, http_response_size, 0);
+    if (err == -1) {
+        log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
+        return;
+    }
     
-    close(ups_sock);
+    size_t print_len = http_response_size;
+    printf("Response (first %zu bytes): %.*s\n", print_len, (int)print_len, http_response);
 
+    
+    free(http_response);
+    close(sockets.client_socket);
+    close(ups_sock);
 }
 
 
