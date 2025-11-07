@@ -103,7 +103,7 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
     size_t http_body_size;
     for (size_t i = 0; i != num_headers; ++i) {
         if (strncmp(headers[i].name, "Content-Length", 14) == 0) {
-            printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name, (int)headers[i].value_len, headers[i].value);
+            //printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name, (int)headers[i].value_len, headers[i].value);
             size_t val_size = headers[i].value_len;
             char val_buf[val_size];
             memcpy(val_buf, headers[i].value, val_size);
@@ -117,7 +117,6 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
     size_t bytes_count = 0;
     size_t read_bytes_count = 1024;
 
-    printf("%d %d %d %d \n", bytes_left, pret, buflen ,1);
     int err;
 
     while (bytes_count != bytes_left) {
@@ -137,20 +136,8 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
         bytes_count += err;
     }
     
-    fflush(stdout);
-
-    /*
-    printf("headers size %d, buflen %d \n", pret, buflen);
-    printf("successful mb?  http_body_size %d, left: %d, count %d", http_body_size, bytes_left, bytes_count);
-    fflush(stdout);
-    */
-
     *http_response = buf;
     *http_response_size = http_body_size + pret;
-
-    printf("%lld \n", http_body_size + pret);
-    fflush(stdout);
-    
 
     return 0;
 }
@@ -166,7 +153,6 @@ static int upstream_connection_create(char *ip) {
     
     struct sockaddr_in server_addr;
     int port = 80;
-  //  char *ip_ = "213.109.147.119";
   
     char *ip_ = ip;
     memset(&server_addr, 0, sizeof(server_addr));
@@ -239,10 +225,7 @@ void resolve_hostname(const char *hostname, size_t len, char ip[]) {
 
 static void client_task(void *args) {
     int err;
-    
-    printf("thread id = %d", gettid());
-
-    
+        
     sockets_t sockets = *(sockets_t*)args;
     
     char buf[4096], *method, *path;
@@ -252,40 +235,26 @@ static void client_task(void *args) {
     ssize_t rret;
     
     while (1) {
-        /* read the request */
         while ((rret = read(sockets.client_socket, buf + buflen, sizeof(buf) - buflen)) == -1 && errno == EINTR);
 
         if (rret <= 0)
             return;
         prevbuflen = buflen;
         buflen += rret;
-        /* parse the request */
         num_headers = sizeof(headers) / sizeof(headers[0]);
         pret = phr_parse_request(buf, buflen, &method, &method_len, &path, &path_len,
                                 &minor_version, headers, &num_headers, prevbuflen);
         if (pret > 0)
-            break; /* successfully parsed the request */
+            break; 
         else if (pret == -1)
             return;
-        /* request is incomplete, continue the loop */
+            
         assert(pret == -2);
         fflush(stdout);
 
         if (buflen == sizeof(buf))
                 return;
     }
-
-
-        printf("request is %d bytes long\n", pret);
-    printf("method is %.*s\n", (int)method_len, method);
-    printf("path is %.*s\n", (int)path_len, path);
-    printf("HTTP version is 1.%d\n", minor_version);
-    printf("headers:\n");
-    for (size_t i = 0; i != num_headers; ++i) {
-        printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
-            (int)headers[i].value_len, headers[i].value);
-    }
-
 
     char ip_buff[INET_ADDRSTRLEN];
     resolve_hostname(headers[0].value, (int)headers[0].value_len, ip_buff);
@@ -321,9 +290,7 @@ static void client_task(void *args) {
     }
     
     size_t print_len = http_response_size;
-    printf("Response (first %zu bytes): %.*s\n", print_len, (int)print_len, http_response);
 
-    
     free(http_response);
     close(sockets.client_socket);
     close(ups_sock);
