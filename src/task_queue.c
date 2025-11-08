@@ -36,9 +36,14 @@ task_queue_t *task_queue_create() {
     return q;
 }
 
+
+
+//TODO: надо сдвиг по буферу очереди сделать
+
 static void *realloc_queue(task_queue_t *queue) {
-    queue->capacity = queue->capacity * REALLOC_COEFF;
-    queue->tasks = realloc(queue->tasks, queue->capacity);
+    queue->capacity = queue->capacity * 2;
+    //TODO: в реалок в реалок чепуха передается, пока что его нет
+ //   queue->tasks = realloc(queue->tasks, queue->capacity);
     if (!queue->tasks) {
         log_message(FATAL, "QUEUE: REALLOC QUEUE FAILED");
     }
@@ -61,7 +66,7 @@ int task_queue_add(task_queue_t *queue, task_t task) {
     ++queue->tail;
     ++queue->size;
 
-    pthread_cond_signal(&queue->condvar);
+    pthread_cond_broadcast(&queue->condvar);
 
     err = pthread_mutex_unlock(&queue->mutex);
     if (err != 0) {
@@ -85,19 +90,9 @@ task_t task_queue_get(task_queue_t *queue) {
     }
 
     task_t task;
-
-    if (queue_is_empty(queue)) {
-        task.args = NULL;
-        task.function = NULL;
-
+    
+    while (queue_is_empty(queue)) {
         pthread_cond_wait(&queue->condvar, &queue->mutex);
-
-        err = pthread_mutex_unlock(&queue->mutex);
-        if (err != 0) {
-            log_message(FATAL, "QUEUE ADD FAILED: MUTEX UNLOCK FAILED. ERR: %s", strerror(err));
-        }
-        
-        return task;
     }
 
     task = queue->tasks[queue->head];

@@ -2,7 +2,7 @@
 #include <pthread.h>
 
 #define MAX_SIZE 1000000
-#define START_SIZE 5
+#define START_SIZE 10000
 #define REBALANCE_POINT 0.7
 #define REALLOC_COEFF 2;
 

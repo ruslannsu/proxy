@@ -55,7 +55,7 @@ proxy_t *proxy_create(int port) {
         return NULL;
     }
 
-    err = listen(proxy->socket, 3);
+    err = listen(proxy->socket, 5000);
     if (err < 0) {
         log_message(FATAL, "PROXY DO NOT LISTEN");
         
