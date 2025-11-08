@@ -1,3 +1,4 @@
-/build/
+build/
 logger.log
-/.vscode/
+.vscode/
+tests/

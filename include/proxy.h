@@ -1,5 +1,9 @@
 #include <pool.h>
 
+#define RESPONSE_BUFFER_SIZE 100000000
+
+
+
 typedef struct proxy_t {
     int socket;
     thread_pool_t *thread_pool;

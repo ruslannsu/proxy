@@ -67,14 +67,19 @@ proxy_t *proxy_create(int port) {
 }
 
 
+//TODO: буфер здесь тоже создавать не стоит
 static int http_response_parse(int sock, char **http_response, size_t *http_response_size) {
-    size_t size = 100000000;
+    size_t size = RESPONSE_BUFFER_SIZE;
+
     char *buf = malloc(sizeof(char) * size);
+    if (!buf) {
+        log_message(FATAL, "MEM ALLOCATION FOR RESP BUFFER FAILED");
+    }
+
     char *method, *path;
     char *msg;
     size_t msg_len;
     int status;
-
     int pret, minor_version;
     struct phr_header headers[100];
     size_t buflen = 0, prevbuflen = 0, method_len, path_len, num_headers;
@@ -115,6 +120,7 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
     
     size_t bytes_left = http_body_size - (buflen - pret);
     size_t bytes_count = 0;
+   
     size_t read_bytes_count = 1024;
 
     int err;
@@ -143,11 +149,11 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
 }
 
 
-
+//TODO: сокет надо вынести отсюда
 static int upstream_connection_create(char *ip) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
-        log_message(ERROR, "PROXY UPSTREAM SOCKET CREATION FAILED. .ERRNO: %s", strerror(errno));
+        log_message(ERROR, "PROXY UPSTREAM SOCKET CREATION FAILED. ERRNO: %s", strerror(errno));
         return -1;
     }
     
@@ -227,13 +233,14 @@ static void client_task(void *args) {
     int err;
         
     sockets_t sockets = *(sockets_t*)args;
-    
+
+    //TODO это плохо, надо исправить
     char buf[4096], *method, *path;
     int pret, minor_version;
     struct phr_header headers[100];
     size_t buflen = 0, prevbuflen = 0, method_len, path_len, num_headers;
     ssize_t rret;
-    
+    //TODO: унести в отдельную функцию
     while (1) {
         while ((rret = read(sockets.client_socket, buf + buflen, sizeof(buf) - buflen)) == -1 && errno == EINTR);
 
@@ -248,7 +255,7 @@ static void client_task(void *args) {
             break; 
         else if (pret == -1)
             return;
-            
+
         assert(pret == -2);
         fflush(stdout);
 
@@ -266,6 +273,7 @@ static void client_task(void *args) {
         return;
     }
 
+    //TODO: надо убрать хардкод
     char request[4096];
     int req_len = snprintf(request, sizeof(request),
     "GET %s HTTP/1.0\r\n"
@@ -273,6 +281,7 @@ static void client_task(void *args) {
     "\r\n",
     path, headers[0].value);
 
+    //TODO: может кинуть EAGAIN или тп
     err = send(ups_sock, request, req_len, 0);
     if (err == -1) {
         log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
@@ -281,11 +290,15 @@ static void client_task(void *args) {
 
     char *http_response;
     size_t http_response_size;
-    http_response_parse(ups_sock, &http_response, &http_response_size);
+    //TODO: проверять на ошибку  
+    err = http_response_parse(ups_sock, &http_response, &http_response_size);
+    if (err != 0) {
+        log_message(ERROR, "HTTP RESPONSE PARSE FAILED. IP:%s", ip_buff);
+    }
 
     err = send(sockets.client_socket, http_response, http_response_size, 0);
     if (err == -1) {
-        log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
+        log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
         return;
     }
     

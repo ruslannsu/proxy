@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <proxy.h>
 
-int main() {
+int main(int argc, char argv[]) {
     logger_init("./logger.log", DEBUG);
     if (!logger) {
         return -1;
@@ -10,9 +10,9 @@ int main() {
 
     log_message(INFO, "PROCESS START");
 
-    proxy_t *proxy = proxy_create(8080);;
+    proxy_t *proxy = proxy_create(8080);
     if (!proxy) {
-        log_message(ERROR, "PROXY CREATE FAILED. ");
+        log_message(ERROR, "PROXY CREATE FAILED");
     }
 
     proxy_run(proxy);

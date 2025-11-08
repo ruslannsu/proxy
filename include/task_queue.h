@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#define MAX_SIZE 1000000000
+#define MAX_SIZE 1000000
 #define START_SIZE 5
 #define REBALANCE_POINT 0.7
 #define REALLOC_COEFF 2;
@@ -19,6 +19,7 @@ typedef struct task_queue_t {
     size_t capacity;
     task_t *tasks;
     pthread_mutex_t mutex;
+    pthread_cond_t condvar;
 }task_queue_t;
 
 task_queue_t *task_queue_create();
