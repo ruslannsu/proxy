@@ -5,6 +5,8 @@
 #include <getopt.h>
 
 
+
+
 static void help_print() {
     printf("%s\n", "The parameter controls the number of active threads in the thread pool. Example: ./proxy -c 1000");
     printf("%s\n", "The '-p' parameter controls the selected port. Example: ./proxy -p 8080...");
@@ -32,12 +34,9 @@ int main(int argc, char *argv[]) {
             case 'h':
                 help_print();
         }
-
     }
 
     log_message(INFO, "PROCESS START");
-
-
 
     proxy_t *proxy = proxy_create(port);
     if (!proxy) {
