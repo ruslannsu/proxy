@@ -183,15 +183,7 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
     return 0;
 }
 
-
-//TODO: сокет надо вынести отсюда
-static int upstream_connection_create(char *ip) {
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == -1) {
-        log_message(ERROR, "PROXY UPSTREAM SOCKET CREATION FAILED. ERRNO: %s", strerror(errno));
-        return -1;
-    }
-    
+static int upstream_connection_create(int ups_socket, char *ip) { 
     struct sockaddr_in server_addr;
     int port = 80;
   
@@ -204,12 +196,13 @@ static int upstream_connection_create(char *ip) {
     
     int err;
 
-    err = connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    err = connect(ups_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
     if (err != 0) {
         log_message(ERROR, "PROXY UPSTREAM 'CONNECT' FAILED. ERRNO: %s", strerror(errno));
         return -1;
     }
-    return sock;
+
+    return 0;
     
 }
 
@@ -283,11 +276,19 @@ static void client_task(void *args) {
     resolve_hostname(headers[0].value, (int)headers[0].value_len, ip_buff);
     ip_buff[INET_ADDRSTRLEN] = '\0';
      
-    int ups_sock = upstream_connection_create(ip_buff);
-    if (ups_sock == -1) {
-        log_message(ERROR, "CONNECTION TO UPSTREAM FAILED: ip: %s", ip_buff);
-        return;
+
+    int ups_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (ups_sock < 0) {
+        log_message(ERROR, "UPS SOCKET CREATION FAILED");
     }
+
+    err = upstream_connection_create(ups_sock, ip_buff);
+    if (err != 0) {
+        log_message(ERROR, "UPSTREAM CONNECTION FAILED");
+    }
+
+    
+    
 
     //TODO: надо убрать хардкод
     char request[4096];
@@ -311,7 +312,7 @@ static void client_task(void *args) {
     if (err != 0) {
         log_message(ERROR, "HTTP RESPONSE PARSE FAILED. IP:%s", ip_buff);
     }
-
+ 
     err = send(sockets.client_socket, http_response, http_response_size, 0);
     if (err == -1) {
         log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
