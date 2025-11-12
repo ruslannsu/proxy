@@ -257,11 +257,10 @@ void resolve_hostname(const char *hostname, size_t len, char ip[]) {
 
 static void client_task(void *args) {
     int err;
-        
+
     sockets_t sockets = *(sockets_t*)args;
 
     http_parse_t http_parse;
-
 
     err = parse_http_headers(sockets.client_socket, &http_parse);
     if (err != 0) {
@@ -282,15 +281,12 @@ static void client_task(void *args) {
         log_message(ERROR, "UPS SOCKET CREATION FAILED");
     }
 
+
     err = upstream_connection_create(ups_sock, ip_buff);
     if (err != 0) {
         log_message(ERROR, "UPSTREAM CONNECTION FAILED");
     }
 
-    
-    
-
-    //TODO: надо убрать хардкод
     char request[4096];
     int req_len = snprintf(request, sizeof(request),
     "GET %s HTTP/1.0\r\n"
@@ -298,7 +294,6 @@ static void client_task(void *args) {
     "\r\n",
     path, headers[0].value);
 
-    //TODO: может кинуть EAGAIN или тп
     err = send(ups_sock, request, req_len, 0);
     if (err == -1) {
         log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
@@ -307,12 +302,11 @@ static void client_task(void *args) {
 
     char *http_response;
     size_t http_response_size;
-    //TODO: проверять на ошибку  
     err = http_response_parse(ups_sock, &http_response, &http_response_size);
     if (err != 0) {
         log_message(ERROR, "HTTP RESPONSE PARSE FAILED. IP:%s", ip_buff);
     }
- 
+
     err = send(sockets.client_socket, http_response, http_response_size, 0);
     if (err == -1) {
         log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
@@ -326,15 +320,9 @@ static void client_task(void *args) {
     close(ups_sock);
 }
 
-
-static void server_task(void *args) {
-    
-}
-
 void proxy_run(proxy_t *proxy) {
     log_message(INFO, "PROXY: RUNNING");
     sockets_t pairs[1024];
-
     
     int err;
     struct sockaddr_in addr;
