@@ -2,8 +2,8 @@
 #include "../lib/picohttpparser/picohttpparser.h"
 
 #define RESPONSE_BUFFER_SIZE 100000000
-
-
+#define DEFAULT_PORT 8080
+#define DEFAULT_THREAD_POOL_SIZE 10
 
 typedef struct proxy_t {
     int socket;

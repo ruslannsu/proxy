@@ -25,12 +25,7 @@ proxy_t *proxy_create(int port) {
     if (!proxy->thread_pool) {
         log_message(FATAL, "PROXY CREATION: THREAD POOL CREATION FAILED");
     }
-
-    proxy->server_thread_pool = thread_pool_create();
-    if (!proxy->server_thread_pool) {
-        log_message(FATAL, "PROXY CREATION: THREAD POOL CREATION FAILED");
-    }
-    
+ 
     proxy->socket = socket(AF_INET, SOCK_STREAM, 0);
     if (proxy->socket == -1) {
         log_message(ERROR, "PROXY CREATION: CANT CREATE SOCK. ERRNO: %s ", strerror(errno));
@@ -72,7 +67,6 @@ static int parse_http_headers(int client_socket, http_parse_t *parse) {
     size_t num_headers;
     size_t pathlen;
     int pret, minor_version;
-
 
     while (1) {
         while ((rret = read(client_socket, parse->buf + buflen, sizeof(parse->buf) - buflen)) == -1 && errno == EINTR);
