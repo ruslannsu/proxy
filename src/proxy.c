@@ -323,6 +323,7 @@ static void client_task(void *args) {
 void proxy_run(proxy_t *proxy) {
     log_message(INFO, "PROXY: RUNNING");
     sockets_t pairs[1024];
+
     
     int err;
     struct sockaddr_in addr;
