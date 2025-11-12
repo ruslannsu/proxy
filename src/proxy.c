@@ -8,7 +8,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
-#include "../lib/picohttpparser/picohttpparser.h"
 #include <assert.h>
 #include <unistd.h>
 #include <netdb.h>  
@@ -64,6 +63,42 @@ proxy_t *proxy_create(int port) {
     log_message(INFO, "PROXY: CREATION COMPLETE");
 
     return proxy;
+}
+
+
+static int parse_http_headers(int client_socket, http_parse_t *parse) {
+    ssize_t rret;
+    size_t buflen = 0, prevbuflen = 0;
+    size_t num_headers;
+    size_t pathlen;
+    int pret, minor_version;
+
+
+    while (1) {
+        while ((rret = read(client_socket, parse->buf + buflen, sizeof(parse->buf) - buflen)) == -1 && errno == EINTR);
+
+        if (rret <= 0)
+            return -1;
+        prevbuflen = buflen;
+        buflen += rret;
+        num_headers = sizeof(parse->headers) / sizeof(parse->headers[0]);
+        pret = phr_parse_request(parse->buf, buflen, &parse->method, &parse->method_len, &parse->path, &parse->path_len,
+                                &minor_version, parse->headers, &num_headers, prevbuflen);
+        if (pret > 0)
+            break; 
+        else if (pret == -1)
+            return -1;
+
+        assert(pret == -2);
+        fflush(stdout);
+
+        if (buflen == sizeof(parse->buf))
+                return -1;
+    }
+
+    return 0;
+
+
 }
 
 
@@ -227,41 +262,22 @@ void resolve_hostname(const char *hostname, size_t len, char ip[]) {
     freeaddrinfo(result);
 }
 
-
-
 static void client_task(void *args) {
     int err;
         
     sockets_t sockets = *(sockets_t*)args;
 
-    //TODO это плохо, надо исправить
-    char buf[4096], *method, *path;
-    int pret, minor_version;
-    struct phr_header headers[100];
-    size_t buflen = 0, prevbuflen = 0, method_len, path_len, num_headers;
-    ssize_t rret;
-    //TODO: унести в отдельную функцию
-    while (1) {
-        while ((rret = read(sockets.client_socket, buf + buflen, sizeof(buf) - buflen)) == -1 && errno == EINTR);
+    http_parse_t http_parse;
 
-        if (rret <= 0)
-            return;
-        prevbuflen = buflen;
-        buflen += rret;
-        num_headers = sizeof(headers) / sizeof(headers[0]);
-        pret = phr_parse_request(buf, buflen, &method, &method_len, &path, &path_len,
-                                &minor_version, headers, &num_headers, prevbuflen);
-        if (pret > 0)
-            break; 
-        else if (pret == -1)
-            return;
 
-        assert(pret == -2);
-        fflush(stdout);
-
-        if (buflen == sizeof(buf))
-                return;
+    err = parse_http_headers(sockets.client_socket, &http_parse);
+    if (err != 0) {
+        log_message(ERROR, "CLIENT TASK: CAN NOT PARSE HTTP HREADERS");
+        return;
     }
+
+    struct phr_header *headers = http_parse.headers;
+    char *path = http_parse.path;
 
     char ip_buff[INET_ADDRSTRLEN];
     resolve_hostname(headers[0].value, (int)headers[0].value_len, ip_buff);
