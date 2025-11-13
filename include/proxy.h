@@ -39,6 +39,6 @@ proxy_t *proxy_create(int port);
 void proxy_run(proxy_t *proxy);
 
 //TODO:
-proxy_t *proxy_destroy(proxy_t proxy);
+void proxy_destroy(proxy_t proxy);
 
 

@@ -248,7 +248,7 @@ void resolve_hostname(const char *hostname, size_t len, char ip[]) {
     
     freeaddrinfo(result);
 }
-
+//TODO:перед каждым return надо чистить ресурсы
 static void client_task(void *args) {
     int err;
 

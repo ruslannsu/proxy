@@ -1,4 +1,4 @@
-# PROXY
+# HTTP-proxy
 
 ## Building
 In the root directory, use make to get a build directory with the proxy executable file.
