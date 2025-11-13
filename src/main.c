@@ -14,13 +14,11 @@ static void help_print() {
     printf("%s\n", "If no parameters are specified, the proxy will run with the default parameters: ./proxy -p 8080 -c 10 -u");
 }
 
-
 int main(int argc, char *argv[]) {
     logger_init("./logger.log", DEBUG);
     if (!logger) {
         return -1;
     }
-
 
     int port = DEFAULT_PORT;
     int thread_pool_size = DEFAULT_THREAD_POOL_SIZE;
@@ -44,5 +42,10 @@ int main(int argc, char *argv[]) {
     }
 
     proxy_run(proxy);
+
+
+    proxy_destroy(proxy);
+    log_message(INFO, "SHUTDOWN GRACEFUL");
+
     return 0;
 }

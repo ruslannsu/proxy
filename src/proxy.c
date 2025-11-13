@@ -11,8 +11,17 @@
 #include <assert.h>
 #include <unistd.h>
 #include <netdb.h>  
+#include <signal.h>
 
 
+int process_status = RUN;
+
+
+//TODO: вообще так не круто обработчик переназначать, надо на sigaction
+void shutdown_handler(int sig) {
+    process_status = SHUTDOWN;    
+}
+ 
 proxy_t *proxy_create(int port) {
     int err;
 
@@ -55,6 +64,8 @@ proxy_t *proxy_create(int port) {
         
     }
 
+    err = signal(SIGINT, shutdown_handler);
+    
     log_message(INFO, "PROXY: CREATION COMPLETE");
 
     return proxy;
@@ -314,22 +325,32 @@ static void client_task(void *args) {
     close(ups_sock);
 }
 
+
+
+
+
 void proxy_run(proxy_t *proxy) {
     log_message(INFO, "PROXY: RUNNING");
     sockets_t pairs[1024];
 
-    
     int err;
     struct sockaddr_in addr;
     socklen_t sock_len = sizeof(addr);
     thread_pool_run(proxy->thread_pool);
-    
+
     size_t index = 0;
     while (1) {
+
+
         int sock = accept(proxy->socket, (struct sockaddr*)&addr, &sock_len);
         if (sock < 0) { 
             log_message(ERROR, "PROXY RUNNING: CONNECTION ACCEPT ERR. ERRNO: %s", strerror(errno));
         }
+
+        if (process_status == SHUTDOWN) {
+            break;
+        }
+        
 
         log_message(INFO, "PROXY NEW CONNECTION WITH ADDR: %s, PORT: %d", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
@@ -343,8 +364,13 @@ void proxy_run(proxy_t *proxy) {
         ++index;
     }
 
-    sleep(10);
     log_message(INFO, "PROXY: STOP RUNNING");
     
 }
 
+
+void proxy_destroy(proxy_t *proxy) {
+    thread_poll_destroy(proxy->thread_pool);
+    free(proxy);
+    log_message(INFO, "PROXY STRUCT DESTROYED");
+}

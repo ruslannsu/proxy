@@ -107,3 +107,23 @@ task_t task_queue_get(task_queue_t *queue) {
 
     return task;
 }
+
+void task_queue_destroy(task_queue_t *queue) {
+    int err;
+
+    //TODO потом
+    /*
+    err = pthread_mutex_destroy(&queue->mutex);
+    if (err != 0) {
+        log_message(FATAL, "TASK QUEUE DESTROY FAILED: MUTEX DESTROY FAILED %s", strerror(err));
+    }
+    */
+
+    free(queue->tasks);
+    free(queue);
+
+    log_message(INFO, "TASK QUEUE DESTROYED");
+    
+    //TODO мьютексы тоже надо уничтожить
+}
+

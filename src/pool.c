@@ -48,11 +48,31 @@ void thread_pool_run(thread_pool_t *thread_pool) {
         if (err != 0) { 
             log_message(FATAL, "THREAD POOL RUN FAILED", strerror(err));
         }
+
     }
 }
 
+static void thread_pool_stop(thread_pool_t *thread_pool) {
+    int err;
 
+    for (size_t i = 0; i < THREAD_COUNT; ++i) {
+        err = pthread_cancel(thread_pool->threads[i]);
+        if (err != 0) {
+            log_message(FATAL, "THREAD POLL STOP FAILED: %s", strerror(err));
+        }
+    }
+}
 
+void thread_poll_destroy(thread_pool_t *thread_pool) {
+    thread_pool_stop(thread_pool);
+    free(thread_pool->threads);
+    
+
+    task_queue_destroy(thread_pool->task_queue);
+    free(thread_pool);
+
+    log_message(INFO, "THREAD POOL DESTROYED");
+}
 
 
 

@@ -13,3 +13,5 @@ typedef struct thread_pool_t {
 thread_pool_t *thread_pool_create();
 
 void thread_pool_run(thread_pool_t *thread_pool);
+
+void thread_poll_destroy(thread_pool_t *thread_popl);
