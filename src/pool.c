@@ -25,6 +25,16 @@ thread_pool_t *thread_pool_create() {
 }
 
 static void *reader_routine(void *args) {
+    int err;
+
+
+   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+
+    err = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+    if (err != 0) {
+        log_message(FATAL, "THREAD POOL RUN FAILED, %s", strerror(err));
+    }
+
     task_queue_t *queue = (task_queue_t*)(args);
     while (1) {   
         
@@ -46,9 +56,8 @@ void thread_pool_run(thread_pool_t *thread_pool) {
     for (size_t i = 0; i < THREAD_COUNT; ++i) {
         err = pthread_create(&thread_pool->threads[i], NULL, reader_routine, thread_pool->task_queue);
         if (err != 0) { 
-            log_message(FATAL, "THREAD POOL RUN FAILED", strerror(err));
+            log_message(FATAL, "THREAD POOL RUN FAILED %s", strerror(err));
         }
-
     }
 }
 
@@ -60,12 +69,26 @@ static void thread_pool_stop(thread_pool_t *thread_pool) {
         if (err != 0) {
             log_message(FATAL, "THREAD POLL STOP FAILED: %s", strerror(err));
         }
+
     }
 }
 
 void thread_poll_destroy(thread_pool_t *thread_pool) {
     thread_pool_stop(thread_pool);
+    sleep(1);//TODO возможно некоторые потоки не успевают остановиться(по сигналу), надо нормально сделать проверку в хендлере
+
+
+    
+
+    
+    
+
+    int err;
+     
+
+
     free(thread_pool->threads);
+
     
 
     task_queue_destroy(thread_pool->task_queue);

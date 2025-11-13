@@ -43,7 +43,6 @@ int main(int argc, char *argv[]) {
 
     proxy_run(proxy);
 
-
     proxy_destroy(proxy);
     log_message(INFO, "SHUTDOWN GRACEFUL");
 
