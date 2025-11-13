@@ -10,7 +10,7 @@ TARGET = $(BUILDDIR)/proxy
 
 CFLAGS += -Ilib/picohttpparser
 
-.PHONY: all clean run
+.PHONY: all clean run valgrind
 
 all: $(TARGET)
 
@@ -21,7 +21,7 @@ $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(BUILDDIR)/%.o: %.c | $(BUILDDIR)
-	@mkdir -p $(dir $@)  # Создаем поддиректории если нужно
+	@mkdir -p $(dir $@) 
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
@@ -29,3 +29,6 @@ clean:
 
 run: $(TARGET)
 	./$(TARGET)
+
+valgrind: $(TARGET)
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(TARGET)
