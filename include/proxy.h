@@ -13,8 +13,8 @@ typedef struct proxy_t {
 }proxy_t;
 
 typedef struct sockets_t {
-    int *proxy_socket;
-    int *client_socket;
+    int proxy_socket;
+    int client_socket;
 } sockets_t;
 
 typedef struct http_parse_t {
