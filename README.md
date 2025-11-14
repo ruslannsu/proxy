@@ -1,6 +1,12 @@
 # HTTP-proxy
 
 ## Building
+
+You will need the make utility to build:
+```
+sudo apt install make
+```
+
 In the root directory, use make to get a build directory with the proxy executable file.
 ```
 make
@@ -11,12 +17,23 @@ To run the proxy with default parameters in the build directory, use:
 ./proxy
 ```
 
-To run the proxy with default parameters and get information about other parameters in the build directory, use:
+To display information about launch parameters, use:
 ```
-./proxy -h
+--help -h
 ```
 
-Or in the root directory use:
+
+To select a port use:
+```
+--port -p
+```
+
+To specify the number of threads in the thread pool, use:
+```
+--threads -t
+```
+
+To run the proxy with default parameters after building, use:
 ```
 make run
 ```
