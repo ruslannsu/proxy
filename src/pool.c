@@ -3,15 +3,15 @@
 #include <errno.h>
 #include <string.h>
 
-
-
-thread_pool_t *thread_pool_create() {
+thread_pool_t *thread_pool_create(size_t size) {
     thread_pool_t *thread_pool = malloc(sizeof(thread_pool_t));
     if (!thread_pool) {
         log_message(FATAL, "THREAD POOL CREATE FAILED. ERRNO: %s", strerror(errno));
     }
 
-    thread_pool->threads = malloc(sizeof(pthread_t) * THREAD_COUNT);
+    thread_pool->thread_pool_size = size;
+
+    thread_pool->threads = malloc(sizeof(pthread_t) * size);
     if (!thread_pool->threads) {
         log_message(FATAL, "THREAD POOL CREATE FAILED. ERRNO: %s", strerror(errno));
     }
@@ -54,7 +54,7 @@ static void *reader_routine(void *args) {
 void thread_pool_run(thread_pool_t *thread_pool) {
     int err;
 
-    for (size_t i = 0; i < THREAD_COUNT; ++i) {
+    for (size_t i = 0; i < thread_pool->thread_pool_size; ++i) {
         err = pthread_create(&thread_pool->threads[i], NULL, reader_routine, thread_pool->task_queue);
         if (err != 0) { 
             log_message(FATAL, "THREAD POOL RUN FAILED %s", strerror(err));
@@ -72,7 +72,7 @@ static void thread_pool_stop(thread_pool_t *thread_pool) {
     }
 
 
-    for (size_t i = 0; i < THREAD_COUNT; ++i) {
+    for (size_t i = 0; i < thread_pool->thread_pool_size; ++i) {
         err = pthread_join(thread_pool->threads[i], NULL);
         if (err != 0) {
             log_message(FATAL, "THREAD POLL STOP FAILED: %s", strerror(err));
@@ -81,14 +81,9 @@ static void thread_pool_stop(thread_pool_t *thread_pool) {
 }
 
 void thread_poll_destroy(thread_pool_t *thread_pool) {
-
-    printf("there");
-    fflush(stdout);
     thread_pool_stop(thread_pool);
 
     free(thread_pool->threads);
-
-    
 
     task_queue_destroy(thread_pool->task_queue);
     free(thread_pool);

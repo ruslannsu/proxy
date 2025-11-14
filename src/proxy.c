@@ -22,7 +22,7 @@ void shutdown_handler(int sig) {
     process_status = SHUTDOWN;    
 }
  
-proxy_t *proxy_create(int port) {
+proxy_t *proxy_create(int port, size_t thread_pool_size) {
     int err;
 
     proxy_t *proxy = malloc(sizeof(proxy_t));
@@ -30,7 +30,7 @@ proxy_t *proxy_create(int port) {
         log_message(FATAL, "PROXY CREATION: BAD ALLOC. ERRNO: %s", strerror(errno));
     }
 
-    proxy->thread_pool = thread_pool_create();
+    proxy->thread_pool = thread_pool_create(thread_pool_size);
     if (!proxy->thread_pool) {
         log_message(FATAL, "PROXY CREATION: THREAD POOL CREATION FAILED");
     }
