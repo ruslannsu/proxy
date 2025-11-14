@@ -4,16 +4,11 @@
 #include <unistd.h>
 #include <getopt.h>
 
-
 static struct option options[] = {
     {"help", no_argument, 0 ,'h'},
     {"port", required_argument, 0, 'p'},
     {"threads", required_argument, 0, 't'}
 };
-
-
-
-
 
 static void help_print() {
     printf("%s\n", "The parameter controls the number of active threads in the thread pool. Example: ./proxy -c 1000");
@@ -31,9 +26,8 @@ int main(int argc, char *argv[]) {
     int port = DEFAULT_PORT;
     size_t thread_pool_size = DEFAULT_THREAD_POOL_SIZE;
     
-
     int opt;
-    while ((opt = getopt_long(argc, argv, "hi:o:v", options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "p:t:h", options, NULL)) != -1) {
         switch (opt) {
             case 'h':  
                 help_print();
@@ -59,7 +53,6 @@ int main(int argc, char *argv[]) {
     proxy_run(proxy);
 
     proxy_destroy(proxy);
-
 
     log_message(INFO, "SHUTDOWN GRACEFUL");
 

@@ -148,7 +148,6 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
     size_t http_body_size;
     for (size_t i = 0; i != num_headers; ++i) {
         if (strncmp(headers[i].name, "Content-Length", 14) == 0) {
-            //printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name, (int)headers[i].value_len, headers[i].value);
             size_t val_size = headers[i].value_len;
             char val_buf[val_size];
             memcpy(val_buf, headers[i].value, val_size);
@@ -157,20 +156,20 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
         }
     }
 
-    
     size_t bytes_left = http_body_size - (buflen - pret);
     size_t bytes_count = 0;
    
     size_t read_bytes_count = 1024;
 
     int err;
-
-    if (http_body_size > size) {
+    
+    if ((http_body_size > size) && (http_body_size >= 0)) {
         buf = realloc(buf, http_body_size);
         if (!buf) {
-            log_message(FATAL, "HTTP RESPONSE PARSE FAILED, CAN NOT REALLOC BUF");
+            log_message(FATAL, "HTTP RESPONSE PARSE FAILED, CAN NOT REALLOC BUF. ERRNO: %s ", strerror(errno));
         }
     }
+
 
 
     while (bytes_count != bytes_left) {
