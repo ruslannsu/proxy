@@ -15,6 +15,7 @@ task_queue_t *task_queue_create() {
     q->tail = 0;
     q->size = 0;
     q->capacity = START_SIZE;
+    q->queue_shutdown = 0;
 
     q->tasks = malloc(sizeof(task_t) * START_SIZE);
     if (!q->tasks) {
@@ -91,8 +92,17 @@ task_t task_queue_get(task_queue_t *queue) {
 
     task_t task;
     
-    while (queue_is_empty(queue)) {
+    while (queue_is_empty(queue) && (!queue->queue_shutdown)) {
         pthread_cond_wait(&queue->condvar, &queue->mutex);
+    }
+
+    if (queue->queue_shutdown) { 
+        err = pthread_mutex_unlock(&queue->mutex); 
+        if (err != 0) {
+            log_message(FATAL, "QUEUE ADD FAILED: MUTEX UNLOCK FAILED. ERR: %s", strerror(err));
+        }
+
+        return task;
     }
 
     task = queue->tasks[queue->head];

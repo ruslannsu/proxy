@@ -341,17 +341,16 @@ void proxy_run(proxy_t *proxy) {
     size_t index = 0;
     while (1) {
 
-
         int sock = accept(proxy->socket, (struct sockaddr*)&addr, &sock_len);
         if (sock < 0) { 
             log_message(ERROR, "PROXY RUNNING: CONNECTION ACCEPT ERR. ERRNO: %s", strerror(errno));
         }
 
         if (process_status == SHUTDOWN) {
+            log_message(INFO, "PROXY STOPPED(SHUTDOWN)");
             break;
         }
         
-
         log_message(INFO, "PROXY NEW CONNECTION WITH ADDR: %s, PORT: %d", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
         pairs[index].client_socket = sock;

@@ -20,6 +20,7 @@ typedef struct task_queue_t {
     task_t *tasks;
     pthread_mutex_t mutex;
     pthread_cond_t condvar;
+    int queue_shutdown;
 }task_queue_t;
 
 task_queue_t *task_queue_create();
