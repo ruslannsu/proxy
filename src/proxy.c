@@ -165,6 +165,14 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
 
     int err;
 
+    if (http_body_size > size) {
+        buf = realloc(buf, http_body_size);
+        if (!buf) {
+            log_message(FATAL, "HTTP RESPONSE PARSE FAILED, CAN NOT REALLOC BUF");
+        }
+    }
+
+
     while (bytes_count != bytes_left) {
         if (buflen >= http_body_size + pret) {
             break;
@@ -324,9 +332,6 @@ static void client_task(void *args) {
     close(sockets.client_socket);
     close(ups_sock);
 }
-
-
-
 
 
 void proxy_run(proxy_t *proxy) {
