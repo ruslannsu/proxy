@@ -20,3 +20,4 @@ cache_t *cache_create();
 
 void cache_destroy(cache_t *cache);
 
+int cache_add(cache_t *cache, char *url, char *buffer, size_t buffer_size);

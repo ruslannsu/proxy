@@ -12,7 +12,7 @@ cache_t *cache_create() {
 
     cache->cache_size = 0;
 
-    cache->cache_table = g_hash_table_new(g_int_hash, g_int_equal);
+    cache->cache_table = g_hash_table_new(g_str_hash, g_str_equal);
     if (!cache->cache_table) {
         log_message(FATAL, "CAN NOT CREATE CACHE TABLE. ERRNO:%s", strerror(errno));
     }
@@ -39,13 +39,20 @@ void cache_destroy(cache_t *cache) {
     //TODO
 }
 
-void cache_add(char *buffer) {
+
+int cache_contains(cache_t *cache, char *url) {
+    return g_hash_table_contains(cache->cache_table, url);
+}
+
+int cache_add(cache_t *cache, char *url, char *buffer, size_t buffer_size) {
     time_t cur_time;
     time(&cur_time);
-
+    //возможно тут можно не ходить на кучу, а просто структурку в хэш закидывать, но я хз как работать будет, так что пока что нет
     cache_content_t *cache_content = cache_content_create(buffer, cur_time);
     //уже проверяется ошибка на память
+    g_hash_table_insert(cache->cache_table, url, cache_content);
 
-    
-    
+    cache->cache_size += buffer_size;
+
+    return 0;
 }

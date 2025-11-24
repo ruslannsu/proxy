@@ -1,5 +1,6 @@
 #include <pool.h>
 #include "../lib/picohttpparser/picohttpparser.h"
+#include "cache.h"
 
 #define RESPONSE_BUFFER_SIZE 100000000
 #define DEFAULT_PORT 8080
@@ -9,16 +10,19 @@
 #define UPSTREAM_MODE 0
 #define CACHE_MODE 1
 
+typedef struct sockets_t {
+    int proxy_socket;
+    int client_socket;
+    void *proxy;
+} sockets_t;
+
 typedef struct proxy_t {
     int socket;
     int mode;
     thread_pool_t *thread_pool;
+    cache_t *cache;
+    sockets_t pairs[1024];
 }proxy_t;
-
-typedef struct sockets_t {
-    int proxy_socket;
-    int client_socket;
-} sockets_t;
 
 typedef struct http_parse_t {
     char buf[4096];
@@ -35,8 +39,6 @@ typedef struct http_parse_t {
     ssize_t rret;
 
 } http_parse_t;
-
-
 
 proxy_t *proxy_create(int port, size_t thread_pool_size, int mode);
 

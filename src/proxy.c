@@ -29,6 +29,17 @@ proxy_t *proxy_create(int port, size_t thread_pool_size, int mode) {
     if (!proxy) {
         log_message(FATAL, "PROXY CREATION: BAD ALLOC. ERRNO: %s", strerror(errno));
     }
+    
+
+    proxy->mode = mode;
+
+    if (mode == CACHE_MODE) {
+        proxy->cache = cache_create();
+    }
+    
+    if (mode == UPSTREAM_MODE) {
+        proxy->cache = NULL;
+    }
 
     proxy->thread_pool = thread_pool_create(thread_pool_size);
     if (!proxy->thread_pool) {
@@ -333,9 +344,79 @@ static void client_task(void *args) {
 }
 
 
+static void client_task_cache(void *args) {
+    int err;
+
+    sockets_t sockets = *(sockets_t*)args;
+
+    proxy_t *proxy = (proxy_t*)sockets.proxy;
+
+
+    http_parse_t http_parse;
+
+    err = parse_http_headers(sockets.client_socket, &http_parse);
+    if (err != 0) {
+        log_message(ERROR, "CLIENT TASK: CAN NOT PARSE HTTP HREADERS");
+        return;
+    }
+
+    struct phr_header *headers = http_parse.headers;
+    char *path = http_parse.path;
+
+    char ip_buff[INET_ADDRSTRLEN];
+    resolve_hostname(headers[0].value, (int)headers[0].value_len, ip_buff);
+    ip_buff[INET_ADDRSTRLEN] = '\0';
+
+    
+    
+     
+    
+    int ups_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (ups_sock < 0) {
+        log_message(ERROR, "UPS SOCKET CREATION FAILED");
+    }
+
+    err = upstream_connection_create(ups_sock, ip_buff);
+    if (err != 0) {
+        log_message(ERROR, "UPSTREAM CONNECTION FAILED");
+    }
+
+    char request[4096];
+    int req_len = snprintf(request, sizeof(request),
+    "GET %s HTTP/1.0\r\n"
+    "Connection: close\r\n"
+    "\r\n",
+    path, headers[0].value);
+
+    err = send(ups_sock, request, req_len, 0);
+    if (err == -1) {
+        log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
+        return;
+    }
+
+    char *http_response;
+    size_t http_response_size;
+    err = http_response_parse(ups_sock, &http_response, &http_response_size);
+    if (err != 0) {
+        log_message(ERROR, "HTTP RESPONSE PARSE FAILED. IP:%s", ip_buff);
+    }
+
+    err = send(sockets.client_socket, http_response, http_response_size, 0);
+    if (err == -1) {
+        log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
+        return;
+    }
+    
+    size_t print_len = http_response_size;
+
+    free(http_response);
+    close(sockets.client_socket);
+    close(ups_sock);
+}
+
 void proxy_run(proxy_t *proxy) {
     log_message(INFO, "PROXY: RUNNING");
-    sockets_t pairs[1024];
+    //sockets_t pairs[1024];
 
     int err;
     struct sockaddr_in addr;
@@ -357,16 +438,19 @@ void proxy_run(proxy_t *proxy) {
         
         log_message(INFO, "PROXY NEW CONNECTION WITH ADDR: %s, PORT: %d", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
-        pairs[index].client_socket = sock;
-        pairs[index].proxy_socket= proxy->socket;
+        proxy->pairs[index].client_socket = sock;
+        proxy->pairs[index].proxy_socket = proxy->socket;
+        proxy->pairs[index].proxy = (void*)proxy;
 
         if (proxy->mode == UPSTREAM_MODE) {
-            task_t task = {.args=(void*)&pairs[index], .function=client_task};
+            task_t task = {.args=(void*)&proxy->pairs[index], .function=client_task};
             task_queue_add(proxy->thread_pool->task_queue, task);
         }
 
         if (proxy->mode == CACHE_MODE) {
-            break;
+            task_t task = {.args=(void*)&proxy->pairs[index], .function=client_task_cache};
+            task_queue_add(proxy->thread_pool->task_queue, task);
+
         }
 
         ++index;
