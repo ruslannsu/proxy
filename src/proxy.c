@@ -293,6 +293,7 @@ static void client_task(void *args) {
 
     struct phr_header *headers = http_parse.headers;
     char *path = http_parse.path;
+    int path_len = http_parse.path_len;
 
     char ip_buff[INET_ADDRSTRLEN];
     resolve_hostname(headers[0].value, (int)headers[0].value_len, ip_buff);
@@ -310,18 +311,25 @@ static void client_task(void *args) {
         log_message(ERROR, "UPSTREAM CONNECTION FAILED");
     }
 
+    //здесь все очень плохо...(исправлено)
+    printf("\n");
+    char path_buf[path_len + 1];
+    path_buf[path_len] = '\0';
+    memcpy(path_buf, path, path_len);
+    
     char request[4096];
-    int req_len = snprintf(request, sizeof(request),
+    int req_len = snprintf(request, 4096,
     "GET %s HTTP/1.0\r\n"
     "Connection: close\r\n"
     "\r\n",
-    path, headers[0].value);
+    path_buf);
 
     err = send(ups_sock, request, req_len, 0);
     if (err == -1) {
         log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
         return;
     }
+   
 
     char *http_response;
     size_t http_response_size;
@@ -368,9 +376,7 @@ static void client_task_cache(void *args) {
     ip_buff[INET_ADDRSTRLEN] = '\0';
 
     
-    
-     
-    
+
     int ups_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (ups_sock < 0) {
         log_message(ERROR, "UPS SOCKET CREATION FAILED");
@@ -387,6 +393,8 @@ static void client_task_cache(void *args) {
     "Connection: close\r\n"
     "\r\n",
     path, headers[0].value);
+
+    
 
     err = send(ups_sock, request, req_len, 0);
     if (err == -1) {
