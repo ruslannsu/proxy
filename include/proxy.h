@@ -6,9 +6,12 @@
 #define DEFAULT_THREAD_POOL_SIZE 10
 #define RUN 1
 #define SHUTDOWN 0
+#define UPSTREAM_MODE 0
+#define CACHE_MODE 1
 
 typedef struct proxy_t {
     int socket;
+    int mode;
     thread_pool_t *thread_pool;
 }proxy_t;
 
@@ -35,7 +38,7 @@ typedef struct http_parse_t {
 
 
 
-proxy_t *proxy_create(int port, size_t thread_pool_size);
+proxy_t *proxy_create(int port, size_t thread_pool_size, int mode);
 
 void proxy_run(proxy_t *proxy);
 

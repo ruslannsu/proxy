@@ -22,7 +22,7 @@ void shutdown_handler(int sig) {
     process_status = SHUTDOWN;    
 }
  
-proxy_t *proxy_create(int port, size_t thread_pool_size) {
+proxy_t *proxy_create(int port, size_t thread_pool_size, int mode) {
     int err;
 
     proxy_t *proxy = malloc(sizeof(proxy_t));
@@ -360,10 +360,15 @@ void proxy_run(proxy_t *proxy) {
         pairs[index].client_socket = sock;
         pairs[index].proxy_socket= proxy->socket;
 
-        task_t task = {.args=(void*)&pairs[index], .function=client_task};
+        if (proxy->mode == UPSTREAM_MODE) {
+            task_t task = {.args=(void*)&pairs[index], .function=client_task};
+            task_queue_add(proxy->thread_pool->task_queue, task);
+        }
 
-        task_queue_add(proxy->thread_pool->task_queue, task);
-    
+        if (proxy->mode == CACHE_MODE) {
+            break;
+        }
+
         ++index;
     }
 

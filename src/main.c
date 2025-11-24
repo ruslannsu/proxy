@@ -7,7 +7,8 @@
 static struct option options[] = {
     {"help", no_argument, 0 ,'h'},
     {"port", required_argument, 0, 'p'},
-    {"threads", required_argument, 0, 't'}
+    {"threads", required_argument, 0, 't'},
+    {"mode", required_argument, 0, 'm'}
 };
 
 static void help_print() {
@@ -25,9 +26,10 @@ int main(int argc, char *argv[]) {
 
     int port = DEFAULT_PORT;
     size_t thread_pool_size = DEFAULT_THREAD_POOL_SIZE;
+    int mode = UPSTREAM_MODE;
     
     int opt;
-    while ((opt = getopt_long(argc, argv, "p:t:h", options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "m:p:t:h", options, NULL)) != -1) {
         switch (opt) {
             case 'h':  
                 help_print();
@@ -37,15 +39,28 @@ int main(int argc, char *argv[]) {
                 break;
             case 't':
                 thread_pool_size = atoi(optarg);  
-                break;    
+                break; 
+            case 'm':
+                if (!strcmp(optarg, "upstream")) {
+                    mode = UPSTREAM_MODE;
+                    break;
+                }
+                if (!strcmp(optarg, "cache")) {
+                    mode = CACHE_MODE;
+                    break;
+                }
+        
+                mode = UPSTREAM_MODE;
+                break;
         }
     }
 
+    printf("%d\n -mode", mode);
     log_message(INFO, "PROCESS START");
 
     printf("%d", thread_pool_size);
 
-    proxy_t *proxy = proxy_create(port, thread_pool_size);
+    proxy_t *proxy = proxy_create(port, thread_pool_size, mode);
     if (!proxy) {
         log_message(ERROR, "PROXY CREATE FAILED");
     }
