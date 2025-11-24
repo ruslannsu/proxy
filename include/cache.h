@@ -1,12 +1,20 @@
 #include <glib.h>
+#include <time.h>
 
 #define CACHE_MAX_SIZE 100000000
 
 
 typedef struct cache_t {
-    GHashTable *cache;
+    GHashTable *cache_table;
     size_t cache_size;
 } cache_t;
+
+typedef struct cache_content_t {
+    char *buffer;
+    time_t time;
+}cache_content_t;
+
+
 
 cache_t *cache_create();
 
