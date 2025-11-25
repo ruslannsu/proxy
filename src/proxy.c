@@ -181,8 +181,6 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
         }
     }
 
-
-
     while (bytes_count != bytes_left) {
         if (buflen >= http_body_size + pret) {
             break;
@@ -200,6 +198,9 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
         bytes_count += err;
     }
     
+    printf("%d count\n", bytes_count + rret);
+    printf("%d size\n", http_body_size + pret);
+
     *http_response = buf;
     *http_response_size = http_body_size + pret;
 
@@ -359,7 +360,6 @@ static void client_task_cache(void *args) {
 
     proxy_t *proxy = (proxy_t*)sockets.proxy;
 
-
     http_parse_t http_parse;
 
     err = parse_http_headers(sockets.client_socket, &http_parse);
@@ -370,57 +370,117 @@ static void client_task_cache(void *args) {
 
     struct phr_header *headers = http_parse.headers;
     char *path = http_parse.path;
+    int path_len = http_parse.path_len;
 
     char ip_buff[INET_ADDRSTRLEN];
     resolve_hostname(headers[0].value, (int)headers[0].value_len, ip_buff);
     ip_buff[INET_ADDRSTRLEN] = '\0';
 
+    char path_buf[path_len + 1];
+    path_buf[path_len] = '\0';
+    memcpy(path_buf, path, path_len);
     
-
-    int ups_sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (ups_sock < 0) {
-        log_message(ERROR, "UPS SOCKET CREATION FAILED");
-    }
-
-    err = upstream_connection_create(ups_sock, ip_buff);
+    err = pthread_mutex_lock(&proxy->cache->mutex);
     if (err != 0) {
-        log_message(ERROR, "UPSTREAM CONNECTION FAILED");
+        log_message(FATAL, "CAN NOT LOCK CACHE MUTEX");
     }
 
-    char request[4096];
-    int req_len = snprintf(request, sizeof(request),
-    "GET %s HTTP/1.0\r\n"
-    "Connection: close\r\n"
-    "\r\n",
-    path, headers[0].value);
+    if (cache_contains(proxy->cache, path_buf)) {
+        printf("CONTAINS!\n");
+        cache_content_t *cache_content = (cache_content_t*)(cache_get(proxy->cache, path_buf));
 
-    
+        err = pthread_mutex_unlock(&proxy->cache->mutex);
+        if (err != 0) {
+            log_message(FATAL, "unlock faild");
+        }
 
-    err = send(ups_sock, request, req_len, 0);
-    if (err == -1) {
-        log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
-        return;
+        err = pthread_rwlock_rdlock(&cache_content->lock);
+        if (err != 0) {
+            log_message(FATAL, "rd lock failed");
+        }
+        char *buffer = cache_content->buffer;
+        size_t buffer_size = cache_content->buffer_size;
+        printf("%d", buffer_size);
+        printf("there");
+        err = send(sockets.client_socket, buffer, buffer_size, 0);
+        if (err == -1) {
+            log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
+            return;
+        }
+
+        err = pthread_rwlock_unlock(&cache_content->lock);
+        if (err != 0) {
+            log_message(FATAL, "rd lock failed");
+        }
+        
     }
+    else {
+        printf("NO(\n");
+        int ups_sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (ups_sock < 0) {
+            log_message(ERROR, "UPS SOCKET CREATION FAILED");
+        }
 
-    char *http_response;
-    size_t http_response_size;
-    err = http_response_parse(ups_sock, &http_response, &http_response_size);
-    if (err != 0) {
-        log_message(ERROR, "HTTP RESPONSE PARSE FAILED. IP:%s", ip_buff);
+        err = upstream_connection_create(ups_sock, ip_buff);
+        if (err != 0) {
+            log_message(ERROR, "UPSTREAM CONNECTION FAILED");
+        }
+
+        //здесь все очень плохо...(исправлено)
+        char request[4096];
+        int req_len = snprintf(request, 4096,
+        "GET %s HTTP/1.0\r\n"
+        "Connection: close\r\n"
+        "\r\n",
+        path_buf);
+          
+        err = send(ups_sock, request, req_len, 0);
+        if (err == -1) {
+            log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
+            return;
+        }
+
+        cache_content_t *cache_content = cache_content_create(NULL, 0);
+        err = pthread_rwlock_wrlock(&cache_content->lock);
+        if (err != 0) {
+            log_message(FATAL, "wrlock failed");
+        }
+
+        //TODO: рв лочку можно в кэш адд унести
+        cache_add(proxy->cache, path_buf, cache_content);
+        
+        err = pthread_mutex_unlock(&proxy->cache->mutex);
+        if (err != 0) {
+            log_message(FATAL, "cache unlock mutex fail");
+        }
+
+        char *http_response;
+        size_t http_response_size;
+
+        err = http_response_parse(ups_sock, &cache_content->buffer, &http_response_size);
+        if (err != 0) {
+            log_message(ERROR, "HTTP RESPONSE PARSE FAILED. IP:%s", ip_buff);
+        }
+
+        cache_content->buffer_size = http_response_size;
+        proxy->cache->cache_size += http_response_size;
+
+        err = pthread_rwlock_unlock(&cache_content->lock);
+        if (err != 0) {
+            log_message(FATAL, "err");
+        }
+
+        err = send(sockets.client_socket, cache_content->buffer, &http_response_size, 0);
+        if (err == -1) {
+            log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
+            return;
+        }
+
+        close(sockets.client_socket);
+        close(ups_sock);
     }
-
-    err = send(sockets.client_socket, http_response, http_response_size, 0);
-    if (err == -1) {
-        log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
-        return;
-    }
-    
-    size_t print_len = http_response_size;
-
-    free(http_response);
-    close(sockets.client_socket);
-    close(ups_sock);
 }
+
 
 void proxy_run(proxy_t *proxy) {
     log_message(INFO, "PROXY: RUNNING");
