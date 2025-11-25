@@ -66,12 +66,12 @@ int cache_contains(cache_t *cache, char *url) {
     return g_hash_table_contains(cache->cache_table, url);
 }
 
+
+//TODO
 int cache_add(cache_t *cache, char *url, cache_content_t *cache_content) {
     g_hash_table_insert(cache->cache_table, url, cache_content);
 
     cache->cache_size += cache_content->buffer_size;
-
-
 
     return 0;
 }
