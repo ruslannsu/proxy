@@ -37,6 +37,7 @@ jobs:
         run: |
           cd tests
           ./4-parallel-clients.sh --port 8080 --url http://xcal1.vodafone.co.uk/5MB.zip --requests 100  --timeout 70
+          ./2-concurrent-batches.sh --port 8080 --url http://xcal1.vodafone.co.uk/5MB.zip --requests 50 --timeout 30 --concurrency 25
 
 
 
