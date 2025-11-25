@@ -1,12 +1,12 @@
 name: "CI"
 on:
   push:
-    branches: ["main"]
+    branches: ["main, cache"]
   pull_request:
     branches: ["main"]
 
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: check
@@ -16,7 +16,7 @@ jobs:
         run: |
           echo "init"
           sudo apt-get update
-          sudo apt-get install -y gcc make libsome-dev
+          sudo apt-get install -y gcc make
 
       - name: build
         run: |
@@ -24,7 +24,8 @@ jobs:
 
       - name: run proxy
         run: |
-          ./build/proxy --threads 110 --mode cache --port 8080
+          timeout --signal=INT 30s ./build/proxy --threads 110 --mode cache --port 8080
+
 
       - name: run test
         run: |
