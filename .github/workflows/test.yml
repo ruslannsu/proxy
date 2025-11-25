@@ -20,8 +20,9 @@ jobs:
         run: |
           echo "init"
           sudo apt-get update
-          sudo apt-get install -y gcc make
+          sudo apt- get install -y gcc make
           sudo apt-get install -y libglib2.0-dev 
+          sudo apt install -y timelimit
 
       - name: build
         run: |
@@ -29,7 +30,8 @@ jobs:
 
       - name: run proxy
         run: |
-          timeout --signal=INT 30s ./build/proxy --threads 110 --mode cache --port 8080
+          timelimit -t 30 -s 2 -T 100 ./build/proxy --threads 110 --mode cache --port 8080
+
 
       - name: run test
         run: |
