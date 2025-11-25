@@ -12,9 +12,28 @@ jobs:
       - name: check
         uses: actions/checkout@v3
       
-      - name: lint
+      - name: dep
         run: |
           echo "init"
-          sudo apt-get install -y cppcheck
-          cppcheck --enable=all --suppress=missingIncludeSystem
+          sudo apt-get update
+          sudo apt-get install -y gcc make libsome-dev
+
+      - name: build
+        run: |
+          make
+
+      - name: run proxy
+        run: |
+          ./build/proxy --threads 110 --mode cache --port 8080
+
+      - name: run test
+        run: |
+          .tests/4-parallel-clients.sh --port 8080 --url http://xcal1.vodafone.co.uk/5MB.zip --requests 100  --timeout 70
+
+
+
+          
+   
+   
   
+    
