@@ -60,11 +60,15 @@ int main(int argc, char *argv[]) {
 
     printf("%d", thread_pool_size);
 
+    
+
     proxy_t *proxy = proxy_create(port, thread_pool_size, mode);
     if (!proxy) {
         log_message(ERROR, "PROXY CREATE FAILED");
     }
 
+    
+    
     proxy_run(proxy);
 
     proxy_destroy(proxy);

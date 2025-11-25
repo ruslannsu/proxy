@@ -54,7 +54,11 @@ cache_content_t *cache_content_create(char *buffer, size_t size) {
 
 
 void cache_destroy(cache_t *cache) {
-    //TODO
+    GList *buffer = g_hash_table_get_values (cache->cache_table);
+    while (!buffer) {
+        free(buffer->data);
+        buffer = buffer->next;
+    }
 }
 
 cache_content_t *cache_get(cache_t *cache, char *url) {
