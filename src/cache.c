@@ -54,7 +54,7 @@ cache_content_t *cache_content_create(char *buffer, size_t size) {
 
 
 void cache_destroy(cache_t *cache) {
-    //TODO
+    //TODO: мапа отдает список
 }
 
 cache_content_t *cache_get(cache_t *cache, char *url) {
