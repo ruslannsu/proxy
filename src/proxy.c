@@ -198,9 +198,6 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
         bytes_count += err;
     }
     
-    printf("%d count\n", bytes_count + rret);
-    printf("%d size\n", http_body_size + pret);
-
     *http_response = buf;
     *http_response_size = http_body_size + pret;
 
@@ -313,7 +310,6 @@ static void client_task(void *args) {
     }
 
     //здесь все очень плохо...(исправлено)
-    printf("\n");
     char path_buf[path_len + 1];
     path_buf[path_len] = '\0';
     memcpy(path_buf, path, path_len);
@@ -386,7 +382,6 @@ static void client_task_cache(void *args) {
     }
 
     if (cache_contains(proxy->cache, path_buf)) {
-        printf("CONTAINS!\n");
         cache_content_t *cache_content = (cache_content_t*)(cache_get(proxy->cache, path_buf));
 
         err = pthread_mutex_unlock(&proxy->cache->mutex);
@@ -400,8 +395,6 @@ static void client_task_cache(void *args) {
         }
         char *buffer = cache_content->buffer;
         size_t buffer_size = cache_content->buffer_size;
-        printf("%d", buffer_size);
-        printf("there");
         err = send(sockets.client_socket, buffer, buffer_size, 0);
         if (err == -1) {
             log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
@@ -415,7 +408,6 @@ static void client_task_cache(void *args) {
         
     }
     else {
-        printf("NO(\n");
         int ups_sock = socket(AF_INET, SOCK_STREAM, 0);
         if (ups_sock < 0) {
             log_message(ERROR, "UPS SOCKET CREATION FAILED");

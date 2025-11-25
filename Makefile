@@ -8,6 +8,8 @@ SOURCES = $(wildcard $(SRCDIR)/*.c) lib/picohttpparser/picohttpparser.c
 OBJECTS = $(SOURCES:%.c=$(BUILDDIR)/%.o)
 TARGET = $(BUILDDIR)/proxy
 
+CFLAGS = -Iinclude -Wall -Wextra -std=c99 -pedantic -D_POSIX_C_SOURCE=200112L `pkg-config --cflags glib-2.0`
+
 CFLAGS += -Ilib/picohttpparser
 LDFLAGS = `pkg-config --libs glib-2.0`
 

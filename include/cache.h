@@ -1,9 +1,8 @@
 #define _GNU_SOURCE
+#define CACHE_MAX_SIZE 100000000
+#include <pthread.h>
 #include <glib.h>
 #include <time.h>
-#include <pthread.h>
-
-#define CACHE_MAX_SIZE 100000000
 
 
 typedef struct cache_t {

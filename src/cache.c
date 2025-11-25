@@ -1,4 +1,3 @@
-
 #include "cache.h"
 #include "logger.h"
 #include <errno.h>
@@ -41,6 +40,7 @@ cache_content_t *cache_content_create(char *buffer, size_t size) {
         log_message(FATAL, "rw lock fatal");
     }
     
+
     time_t time = NULL;
     cache_content->buffer = buffer;
     
