@@ -30,12 +30,12 @@ jobs:
 
       - name: run proxy
         run: |
-          timelimit -t 30 -s 2 -T 100 ./build/proxy --threads 110 --mode cache --port 8080
+          timelimit -t 30 -s 2 -T 100 ./build/proxy --threads 110 --mode cache --port 8080 &
 
 
       - name: run test
         run: |
-          .tests/4-parallel-clients.sh --port 8080 --url http://xcal1.vodafone.co.uk/5MB.zip --requests 100  --timeout 70
+          ./tests/4-parallel-clients.sh --port 8080 --url http://xcal1.vodafone.co.uk/5MB.zip --requests 100  --timeout 70
 
 
 
