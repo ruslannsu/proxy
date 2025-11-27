@@ -13,9 +13,7 @@
 #include <netdb.h>  
 #include <signal.h>
 
-
 int process_status = RUN;
-
 
 //TODO: вообще так не круто обработчик переназначать, надо на sigaction
 void shutdown_handler(int sig) {
@@ -30,7 +28,6 @@ proxy_t *proxy_create(int port, size_t thread_pool_size, int mode) {
         log_message(FATAL, "PROXY CREATION: BAD ALLOC. ERRNO: %s", strerror(errno));
     }
     
-
     proxy->mode = mode;
 
     if (mode == CACHE_MODE) {
@@ -92,7 +89,6 @@ static int parse_http_headers(int client_socket, http_parse_t *parse) {
 
     while (1) {
         while ((rret = read(client_socket, parse->buf + buflen, sizeof(parse->buf) - buflen)) == -1 && errno == EINTR);
-
         if (rret <= 0)
             return -1;
         prevbuflen = buflen;
@@ -169,7 +165,6 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
 
     size_t bytes_left = http_body_size - (buflen - pret);
     size_t bytes_count = 0;
-   
     size_t read_bytes_count = 1024;
 
     int err;
@@ -280,7 +275,6 @@ static void client_task(void *args) {
     int err;
 
     sockets_t sockets = *(sockets_t*)args;
-
     http_parse_t http_parse;
 
     err = parse_http_headers(sockets.client_socket, &http_parse);
@@ -296,8 +290,7 @@ static void client_task(void *args) {
     char ip_buff[INET_ADDRSTRLEN];
     resolve_hostname(headers[0].value, (int)headers[0].value_len, ip_buff);
     ip_buff[INET_ADDRSTRLEN] = '\0';
-     
-
+    
     int ups_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (ups_sock < 0) {
         log_message(ERROR, "UPS SOCKET CREATION FAILED");
@@ -353,9 +346,7 @@ static void client_task_cache(void *args) {
     int err;
 
     sockets_t sockets = *(sockets_t*)args;
-
     proxy_t *proxy = (proxy_t*)sockets.proxy;
-
     http_parse_t http_parse;
 
     err = parse_http_headers(sockets.client_socket, &http_parse);
@@ -393,8 +384,10 @@ static void client_task_cache(void *args) {
         if (err != 0) {
             log_message(FATAL, "rd lock failed");
         }
+
         char *buffer = cache_content->buffer;
         size_t buffer_size = cache_content->buffer_size;
+
         err = send(sockets.client_socket, buffer, buffer_size, 0);
         if (err == -1) {
             log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
@@ -485,7 +478,6 @@ void proxy_run(proxy_t *proxy) {
 
     size_t index = 0;
     while (1) {
-
         int sock = accept(proxy->socket, (struct sockaddr*)&addr, &sock_len);
         if (sock < 0) { 
             log_message(ERROR, "PROXY RUNNING: CONNECTION ACCEPT ERR. ERRNO: %s", strerror(errno));
@@ -519,7 +511,6 @@ void proxy_run(proxy_t *proxy) {
     log_message(INFO, "PROXY: STOP RUNNING");
     
 }
-
 
 void proxy_destroy(proxy_t *proxy) {
     thread_poll_destroy(proxy->thread_pool);

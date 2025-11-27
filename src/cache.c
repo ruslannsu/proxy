@@ -18,7 +18,6 @@ cache_t *cache_create() {
         log_message(FATAL, "cant init mutex cache");
     }
     
-
     cache->cache_table = g_hash_table_new(g_str_hash, g_str_equal);
     if (!cache->cache_table) {
         log_message(FATAL, "CAN NOT CREATE CACHE TABLE. ERRNO:%s", strerror(errno));
@@ -40,18 +39,15 @@ cache_content_t *cache_content_create(char *buffer, size_t size) {
         log_message(FATAL, "rw lock fatal");
     }
     
+    time_t cur_time;
+    time(&cur_time);
 
-    time_t time = NULL;
+    cache_content->time = cur_time;
     cache_content->buffer = buffer;
-    
-    cache_content->time = time;
-
     cache_content->buffer_size = size;
 
     return cache_content;
 }
-
-
 
 void cache_destroy(cache_t *cache) {
     //TODO: мапа отдает список
@@ -66,11 +62,9 @@ int cache_contains(cache_t *cache, char *url) {
     return g_hash_table_contains(cache->cache_table, url);
 }
 
-
 //TODO
 int cache_add(cache_t *cache, char *url, cache_content_t *cache_content) {
     g_hash_table_insert(cache->cache_table, url, cache_content);
-
     cache->cache_size += cache_content->buffer_size;
 
     return 0;
