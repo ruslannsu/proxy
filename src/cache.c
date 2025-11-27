@@ -49,6 +49,33 @@ cache_content_t *cache_content_create(char *buffer, size_t size) {
     return cache_content;
 }
 
+void cache_content_destroy(cache_content_t *cache_content) {
+    free(cache_content->buffer);
+    free(cache_content);
+}
+
+
+void cache_cleaner(cache_t *cache) {
+    GList *node = g_hash_table_get_keys(cache->cache_table);
+    time_t cur_time;
+    time(&cur_time);
+    
+    while (!node) {
+        char *key = (char*)node->data;
+
+        cache_content_t *cache_content = g_hash_table_lookup(cache->cache_table, key);
+
+        if (abs(cache_content->time - cur_time) > 10) {
+            cache_content_destroy(cache_content);
+            g_hash_table_remove(cache->cache_table, key);
+        }
+        
+        node = node->next;
+    }
+}
+
+
+
 void cache_destroy(cache_t *cache) {
     //TODO: мапа отдает список
 }
@@ -56,7 +83,6 @@ void cache_destroy(cache_t *cache) {
 cache_content_t *cache_get(cache_t *cache, char *url) {
     return (cache_content_t*)g_hash_table_lookup(cache->cache_table, url);
 }
-
 
 int cache_contains(cache_t *cache, char *url) {
     return g_hash_table_contains(cache->cache_table, url);
