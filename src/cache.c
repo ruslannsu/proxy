@@ -56,13 +56,23 @@ void cache_content_destroy(cache_content_t *cache_content) {
 
 
 void cache_cleaner(cache_t *cache) {
+    printf("he-----");
+    fflush(stdout);
     GList *node = g_hash_table_get_keys(cache->cache_table);
     time_t cur_time;
     time(&cur_time);
+    printf("he");
+    fflush(stdout);
     
-    while (!node) {
+    while (node != NULL) {
+        if (!node->data) {
+            node = node->next;
+            break;
+        }
+        printf("%s\n", (char*)node->data);
+        fflush(stdout);
         char *key = (char*)node->data;
-
+        break;
         cache_content_t *cache_content = g_hash_table_lookup(cache->cache_table, key);
 
         if (abs(cache_content->time - cur_time) > 10) {
@@ -75,7 +85,6 @@ void cache_cleaner(cache_t *cache) {
 }
 
 
-
 void cache_destroy(cache_t *cache) {
     //TODO: мапа отдает список
 }
@@ -85,6 +94,7 @@ cache_content_t *cache_get(cache_t *cache, char *url) {
 }
 
 int cache_contains(cache_t *cache, char *url) {
+    cache_cleaner(cache);
     return g_hash_table_contains(cache->cache_table, url);
 }
 
