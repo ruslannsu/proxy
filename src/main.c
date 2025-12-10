@@ -8,7 +8,9 @@ static struct option options[] = {
     {"help", no_argument, 0 ,'h'},
     {"port", required_argument, 0, 'p'},
     {"threads", required_argument, 0, 't'},
-    {"mode", required_argument, 0, 'm'}
+    {"mode", required_argument, 0, 'm'},
+    {"size", required_argument, 0, 's'}
+
 };
 
 static void help_print() {
@@ -27,9 +29,10 @@ int main(int argc, char *argv[]) {
     int port = DEFAULT_PORT;
     size_t thread_pool_size = DEFAULT_THREAD_POOL_SIZE;
     int mode = UPSTREAM_MODE;
+    size_t cache_size = 1024;
     
     int opt;
-    while ((opt = getopt_long(argc, argv, "m:p:t:h", options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:m:p:t:h", options, NULL)) != -1) {
         switch (opt) {
             case 'h':  
                 help_print();
@@ -49,10 +52,12 @@ int main(int argc, char *argv[]) {
                     mode = CACHE_MODE;
                     break;
                 }
-        
                 mode = UPSTREAM_MODE;
                 break;
-        }
+            case 's':
+                cache_size = atoi(optarg);
+                break;
+        }   
     }
 
     printf("%d\n -mode", mode);

@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <stdio.h>
 
-cache_t *cache_create() {
+cache_t *cache_create(size_t cache_max_size) {
     int err;
 
     cache_t *cache = malloc(sizeof(cache_t));
@@ -12,6 +12,8 @@ cache_t *cache_create() {
     }
 
     cache->cache_size = 0;
+
+    cache->cache_max_size = cache_max_size;
 
     err = pthread_mutex_init(&cache->mutex, PTHREAD_PROCESS_PRIVATE);
     if (err != 0) {
@@ -101,6 +103,18 @@ int cache_contains(cache_t *cache, char *url) {
 //TODO
 int cache_add(cache_t *cache, char *url, cache_content_t *cache_content) {
     g_hash_table_insert(cache->cache_table, url, cache_content);
+    
+    if (cache_content->buffer_size > cache->cache_max_size) {
+        return -1;
+    }
+
+    if (cache_content->buffer_size + cache->cache_size > cache->cache_max_size) {
+        cache_cleaner(cache);
+        if (cache_content->buffer_size + cache->cache_size > cache->cache_max_size) {
+            return -1;
+        }
+    }
+
     cache->cache_size += cache_content->buffer_size;
 
     return 0;

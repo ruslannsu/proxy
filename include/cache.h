@@ -8,6 +8,7 @@
 typedef struct cache_t {
     GHashTable *cache_table;
     size_t cache_size;
+    size_t cache_max_size;
     pthread_mutex_t mutex;
 } cache_t;
 
@@ -18,7 +19,7 @@ typedef struct cache_content_t {
     pthread_rwlock_t lock;
 }cache_content_t;
 
-cache_t *cache_create();
+cache_t *cache_create(size_t cache_max_size);
 
 void cache_destroy(cache_t *cache);
 
