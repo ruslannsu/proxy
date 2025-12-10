@@ -30,3 +30,5 @@ cache_content_t *cache_get(cache_t *cache, char *url);
 int cache_contains(cache_t *cache, char *url);
 
 cache_content_t *cache_content_create(char *buffer, size_t size);
+
+int cache_place_check(cache_t *cache, size_t buffer_size);

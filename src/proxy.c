@@ -20,7 +20,7 @@ void shutdown_handler(int sig) {
     process_status = SHUTDOWN;    
 }
  
-proxy_t *proxy_create(int port, size_t thread_pool_size, int mode) {
+proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_max_size) {
     int err;
 
     proxy_t *proxy = malloc(sizeof(proxy_t));
@@ -31,7 +31,7 @@ proxy_t *proxy_create(int port, size_t thread_pool_size, int mode) {
     proxy->mode = mode;
 
     if (mode == CACHE_MODE) {
-        proxy->cache = cache_create();
+        proxy->cache = cache_create(cache_max_size);
     }
     
     if (mode == UPSTREAM_MODE) {
@@ -432,8 +432,18 @@ static void client_task_cache(void *args) {
         }
 
         //TODO: рв лочку можно в кэш адд унести
-        cache_add(proxy->cache, path_buf, cache_content);
-        
+        err = cache_add(proxy->cache, path_buf, cache_content);
+        if (err != 0) {
+            close(ups_sock);
+            close(sockets.client_socket);
+
+            err = pthread_mutex_unlock(&proxy->cache->mutex);
+            if (err != 0) {
+                log_message(FATAL, "cache unlock mutex fail");
+            }
+            return;
+        }
+
         err = pthread_mutex_unlock(&proxy->cache->mutex);
         if (err != 0) {
             log_message(FATAL, "cache unlock mutex fail");
@@ -441,14 +451,19 @@ static void client_task_cache(void *args) {
 
         char *http_response;
         size_t http_response_size;
+        
 
         err = http_response_parse(ups_sock, &cache_content->buffer, &http_response_size);
         if (err != 0) {
             log_message(ERROR, "HTTP RESPONSE PARSE FAILED. IP:%s", ip_buff);
         }
+        
+        cache_place_check(proxy->cache, 1020);
 
+        
         cache_content->buffer_size = http_response_size;
         proxy->cache->cache_size += http_response_size;
+        
 
         err = pthread_rwlock_unlock(&cache_content->lock);
         if (err != 0) {

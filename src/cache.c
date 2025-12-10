@@ -58,6 +58,9 @@ void cache_content_destroy(cache_content_t *cache_content) {
 
 
 void cache_cleaner(cache_t *cache) {
+    int err;
+
+
     printf("he-----");
     fflush(stdout);
     GList *node = g_hash_table_get_keys(cache->cache_table);
@@ -96,26 +99,68 @@ cache_content_t *cache_get(cache_t *cache, char *url) {
 }
 
 int cache_contains(cache_t *cache, char *url) {
-    cache_cleaner(cache);
+    //cache_cleaner(cache);
     return g_hash_table_contains(cache->cache_table, url);
+    
 }
+
+static size_t cache_size_get(cache_t *cache) {
+    GList *keys = g_hash_table_get_keys(cache->cache_table);
+    GList *node = keys;
+    size_t cache_size = 0;
+    
+    while (node != NULL) {
+        if (node->data != NULL) {
+            char *key = (char*)node->data;
+            cache_content_t *cache_content = g_hash_table_lookup(cache->cache_table, key);
+            
+            if (cache_content != NULL) {
+                cache_size += cache_content->buffer_size;
+            }
+        }
+        node = node->next;
+    }
+    
+    g_list_free(keys); 
+    return cache_size;
+}
+
+int cache_place_check(cache_t *cache, size_t buffer_size) {
+    
+    int err;
+    
+    err = pthread_mutex_lock(&cache->mutex);
+    if (err != 0) {
+        log_message(FATAL, "cache unlock mutex fail");
+    }
+    printf("%d %s \n", cache_size_get(cache), "cache size sum");
+
+     
+
+    if (buffer_size > cache->cache_max_size) {
+        return -1;
+    }
+
+    /*
+    if (buffer_size + cache->cache_size > cache->cache_max_size) {
+        cache_cleaner(cache);
+        if (buffer_size + cache->cache_size > cache->cache_max_size) {
+            return -1;
+        }
+    }
+    */
+
+    err = pthread_mutex_unlock(&cache->mutex);
+    if (err != 0) {
+        log_message(FATAL, "cache unlock mutex fail");
+    }
+
+}
+
 
 //TODO
 int cache_add(cache_t *cache, char *url, cache_content_t *cache_content) {
     g_hash_table_insert(cache->cache_table, url, cache_content);
     
-    if (cache_content->buffer_size > cache->cache_max_size) {
-        return -1;
-    }
-
-    if (cache_content->buffer_size + cache->cache_size > cache->cache_max_size) {
-        cache_cleaner(cache);
-        if (cache_content->buffer_size + cache->cache_size > cache->cache_max_size) {
-            return -1;
-        }
-    }
-
-    cache->cache_size += cache_content->buffer_size;
-
     return 0;
 }
