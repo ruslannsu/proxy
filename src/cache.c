@@ -101,7 +101,7 @@ void cache_remove(cache_t *cache, char *key) {
 
 
 void cache_destroy(cache_t *cache) {
-    //TODO: мапа отдает список
+    
 }
 
 cache_content_t *cache_get(cache_t *cache, char *url) {

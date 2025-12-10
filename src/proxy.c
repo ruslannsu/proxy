@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <netdb.h>  
 #include <signal.h>
+#include <string.h>
 
 int process_status = RUN;
 
@@ -156,11 +157,12 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
     for (size_t i = 0; i != num_headers; ++i) {
         if (strncmp(headers[i].name, "Content-Length", 14) == 0) {
             size_t val_size = headers[i].value_len;
-            char val_buf[val_size];
+            char val_buf[val_size + 1];               
             memcpy(val_buf, headers[i].value, val_size);
+            val_buf[val_size] = '\0';                
             http_body_size = atoi(val_buf);
             break;
-        }
+        }   
     }
 
     size_t bytes_left = http_body_size - (buflen - pret);
@@ -345,6 +347,7 @@ static void client_task(void *args) {
 static void client_task_cache(void *args) {
     int err;
 
+
     sockets_t sockets = *(sockets_t*)args;
     proxy_t *proxy = (proxy_t*)sockets.proxy;
     http_parse_t http_parse;
@@ -374,15 +377,19 @@ static void client_task_cache(void *args) {
 
     //просто сделал сверху проверку на ttl, надо бы с нижним кастом соединить как-то...
     
-    if (cache_contains(proxy->cache, path_buf)) {
-        if (cache_check_inval(proxy->cache, path_buf)) {
-            cache_remove(proxy->cache, path_buf);
+
+    char *path_key = g_strndup(path_buf, path_len);
+
+
+    if (cache_contains(proxy->cache, path_key)) {
+        if (cache_check_inval(proxy->cache, path_key)) {
+            cache_remove(proxy->cache, path_key);
         }
     }
 
 
-    if (cache_contains(proxy->cache, path_buf)) {
-        cache_content_t *cache_content = (cache_content_t*)(cache_get(proxy->cache, path_buf));
+    if (cache_contains(proxy->cache, path_key)) {
+        cache_content_t *cache_content = (cache_content_t*)(cache_get(proxy->cache, path_key));
 
         err = pthread_mutex_unlock(&proxy->cache->mutex);
         if (err != 0) {
@@ -402,6 +409,10 @@ static void client_task_cache(void *args) {
 
         char *buffer = cache_content->buffer;
         size_t buffer_size = cache_content->buffer_size;
+
+
+        printf("%d %s\n", buffer_size, "buffer size");
+        fflush(stdout);
 
         err = send(sockets.client_socket, buffer, buffer_size, 0);
         if (err == -1) {
@@ -432,7 +443,7 @@ static void client_task_cache(void *args) {
         "GET %s HTTP/1.0\r\n"
         "Connection: close\r\n"
         "\r\n",
-        path_buf);
+        path_key);
           
         err = send(ups_sock, request, req_len, 0);
         if (err == -1) {
@@ -447,7 +458,7 @@ static void client_task_cache(void *args) {
         }
 
         //TODO: рв лочку можно в кэш адд унести
-        err = cache_add(proxy->cache, path_buf, cache_content);
+        err = cache_add(proxy->cache, path_key, cache_content);
         
         err = pthread_mutex_unlock(&proxy->cache->mutex);
         if (err != 0) {
@@ -457,16 +468,22 @@ static void client_task_cache(void *args) {
         char *http_response;
         size_t http_response_size;
         
+        
 
         err = http_response_parse(ups_sock, &cache_content->buffer, &http_response_size);
         if (err != 0) {
             log_message(ERROR, "HTTP RESPONSE PARSE FAILED. IP:%s", ip_buff);
         }
+        
+        time(&cache_content->time);
 
         //cache_content->destroyed = 1;
             
         cache_content->buffer_size = http_response_size;
         proxy->cache->cache_size += http_response_size;
+
+        
+
 
         err = cache_place_check(proxy->cache, http_response_size);
         if (err != 0)  {
@@ -486,8 +503,9 @@ static void client_task_cache(void *args) {
         if (err != 0) {
             log_message(FATAL, "err");
         }
+        
 
-        err = send(sockets.client_socket, cache_content->buffer, &http_response_size, 0);
+        err = send(sockets.client_socket, cache_content->buffer, http_response_size, 0);
         if (err == -1) {
             log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
             return;
@@ -546,6 +564,8 @@ void proxy_run(proxy_t *proxy) {
 
 void proxy_destroy(proxy_t *proxy) {
     thread_poll_destroy(proxy->thread_pool);
+    printf("there");
+    
     free(proxy);
     log_message(INFO, "PROXY STRUCT DESTROYED");
 }

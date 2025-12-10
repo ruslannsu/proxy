@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 
     int port = DEFAULT_PORT;
     size_t thread_pool_size = DEFAULT_THREAD_POOL_SIZE;
-    int mode = UPSTREAM_MODE;
+    int mode = CACHE_MODE;
     size_t cache_size = 100000000000;
     
     int opt;
