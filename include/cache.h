@@ -10,6 +10,7 @@ typedef struct cache_t {
     size_t cache_size;
     size_t cache_max_size;
     pthread_mutex_t mutex;
+    pthread_mutex_t alive_lock;
 } cache_t;
 
 typedef struct cache_content_t {
@@ -17,7 +18,9 @@ typedef struct cache_content_t {
     size_t buffer_size;
     time_t time;
     pthread_rwlock_t lock;
+    pthread_mutex_t *alive_lock;
     int destroyed;
+    int valid;
 }cache_content_t;
 
 cache_t *cache_create(size_t cache_max_size);
@@ -37,3 +40,7 @@ int cache_place_check(cache_t *cache, size_t buffer_size);
 int cache_check_inval(cache_t *cache, char *key);
 
 void cache_remove(cache_t *cache, char *key);
+
+void cache_cleaner(cache_t *cache);
+
+void cache_destroy(cache_t *cache);

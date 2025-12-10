@@ -564,8 +564,8 @@ void proxy_run(proxy_t *proxy) {
 
 void proxy_destroy(proxy_t *proxy) {
     thread_poll_destroy(proxy->thread_pool);
-    printf("there");
-    
+    cache_destroy(proxy->cache);
     free(proxy);
+
     log_message(INFO, "PROXY STRUCT DESTROYED");
 }

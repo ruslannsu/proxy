@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <stdio.h>
 
+pthread_mutex_t alive_lock = PTHREAD_MUTEX_INITIALIZER;
+
 cache_t *cache_create(size_t cache_max_size) {
     int err;
 
@@ -19,12 +21,17 @@ cache_t *cache_create(size_t cache_max_size) {
     if (err != 0) {
         log_message(FATAL, "cant init mutex cache");
     }
-    
-    cache->cache_table = g_hash_table_new(g_str_hash, g_str_equal);
-    if (!cache->cache_table) {
-        log_message(FATAL, "CAN NOT CREATE CACHE TABLE. ERRNO:%s", strerror(errno));
-    }
 
+    err = pthread_mutex_init(&cache->alive_lock, NULL);
+    if (err != 0) {
+        log_message(FATAL, "alive lock fatal");
+    }
+    
+    cache->cache_table = g_hash_table_new_full(
+        g_str_hash,                        
+        g_str_equal,                       
+        free, NULL                           
+    );
     return cache;
 }
 
@@ -40,6 +47,8 @@ cache_content_t *cache_content_create(char *buffer, size_t size) {
     if (err != 0) {
         log_message(FATAL, "rw lock fatal");
     }
+
+    cache_content->alive_lock = &alive_lock;
     
     time_t cur_time;
     time(&cur_time);
@@ -58,30 +67,6 @@ void cache_content_destroy(cache_content_t *cache_content) {
 }
 
 
-void cache_cleaner(cache_t *cache) {
-    GHashTableIter iter;
-    gpointer key, value;
-    
-    g_hash_table_iter_init(&iter, cache->cache_table);
-    
-    while (g_hash_table_iter_next(&iter, &key, &value)) {
-        cache_content_t *cache_content = (cache_content_t*)value;
-        
-        // Если нужны блокировки
-        pthread_rwlock_wrlock(&cache_content->lock);
-        
-        // Уничтожаем содержимое
-        cache_content_destroy(cache_content);
-        
-        // Уничтожаем мьютекс (если он не уничтожается в cache_content_destroy)
-        
-        
-        // Удаляем из таблицы
-        g_hash_table_iter_remove(&iter);
-    }
-}
-
-
 int cache_check_inval(cache_t *cache, char *key) {
     cache_content_t *cache_content = (cache_content_t*)(cache_get(cache, key));
 
@@ -96,13 +81,32 @@ int cache_check_inval(cache_t *cache, char *key) {
 
 void cache_remove(cache_t *cache, char *key) {
     g_hash_table_steal(cache->cache_table, key);
-}
-
-
-
-void cache_destroy(cache_t *cache) {
     
 }
+
+
+void cache_cleaner(cache_t *cache) {
+    GList *keys = g_hash_table_get_keys(cache->cache_table);
+    GList *node = keys;
+    size_t cache_size = 0;
+    
+    while (node != NULL) {
+        if (node->data != NULL) {
+            char *key = (char*)node->data;
+            cache_content_t *cache_content = g_hash_table_lookup(cache->cache_table, key);
+            
+            if (cache_content != NULL) {
+                cache_content_destroy(cache_content);
+            }
+        }
+        node = node->next;
+    }
+    
+    g_list_free(keys); 
+    return cache_size;
+}
+
+
 
 cache_content_t *cache_get(cache_t *cache, char *url) {
     return (cache_content_t*)g_hash_table_lookup(cache->cache_table, url);
@@ -170,4 +174,10 @@ int cache_add(cache_t *cache, char *url, cache_content_t *cache_content) {
     g_hash_table_insert(cache->cache_table, url, cache_content);
     
     return 0;
+}
+
+void cache_destroy(cache_t *cache) {
+    cache_cleaner(cache);
+    g_hash_table_destroy(cache->cache_table);
+    free(cache);
 }
