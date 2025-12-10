@@ -372,6 +372,15 @@ static void client_task_cache(void *args) {
         log_message(FATAL, "CAN NOT LOCK CACHE MUTEX");
     }
 
+    //просто сделал сверху проверку на ttl, надо бы с нижним кастом соединить как-то...
+    
+    if (cache_contains(proxy->cache, path_buf)) {
+        if (cache_check_inval(proxy->cache, path_buf)) {
+            cache_remove(proxy->cache, path_buf);
+        }
+    }
+
+
     if (cache_contains(proxy->cache, path_buf)) {
         cache_content_t *cache_content = (cache_content_t*)(cache_get(proxy->cache, path_buf));
 
@@ -383,6 +392,12 @@ static void client_task_cache(void *args) {
         err = pthread_rwlock_rdlock(&cache_content->lock);
         if (err != 0) {
             log_message(FATAL, "rd lock failed");
+        }
+
+        if (cache_content->destroyed) {
+            pthread_rwlock_unlock(&cache_content->lock);
+            close(sockets.client_socket);
+            return;
         }
 
         char *buffer = cache_content->buffer;
@@ -433,17 +448,7 @@ static void client_task_cache(void *args) {
 
         //TODO: рв лочку можно в кэш адд унести
         err = cache_add(proxy->cache, path_buf, cache_content);
-        if (err != 0) {
-            close(ups_sock);
-            close(sockets.client_socket);
-
-            err = pthread_mutex_unlock(&proxy->cache->mutex);
-            if (err != 0) {
-                log_message(FATAL, "cache unlock mutex fail");
-            }
-            return;
-        }
-
+        
         err = pthread_mutex_unlock(&proxy->cache->mutex);
         if (err != 0) {
             log_message(FATAL, "cache unlock mutex fail");
@@ -457,13 +462,25 @@ static void client_task_cache(void *args) {
         if (err != 0) {
             log_message(ERROR, "HTTP RESPONSE PARSE FAILED. IP:%s", ip_buff);
         }
-        
-        cache_place_check(proxy->cache, 1020);
 
-        
+        //cache_content->destroyed = 1;
+            
         cache_content->buffer_size = http_response_size;
         proxy->cache->cache_size += http_response_size;
-        
+
+        err = cache_place_check(proxy->cache, http_response_size);
+        if (err != 0)  {
+            close(sockets.client_socket);
+            close(ups_sock);
+            cache_content->destroyed = 1;
+            free(cache_content->buffer);
+            err = pthread_rwlock_unlock(&cache_content->lock);
+            if (err != 0) {
+                log_message(FATAL, "err");
+            }
+            
+            return;
+        }
 
         err = pthread_rwlock_unlock(&cache_content->lock);
         if (err != 0) {

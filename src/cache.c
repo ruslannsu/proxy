@@ -47,6 +47,7 @@ cache_content_t *cache_content_create(char *buffer, size_t size) {
     cache_content->time = cur_time;
     cache_content->buffer = buffer;
     cache_content->buffer_size = size;
+    cache_content->destroyed = 0;
 
     return cache_content;
 }
@@ -58,36 +59,45 @@ void cache_content_destroy(cache_content_t *cache_content) {
 
 
 void cache_cleaner(cache_t *cache) {
-    int err;
-
-
-    printf("he-----");
-    fflush(stdout);
-    GList *node = g_hash_table_get_keys(cache->cache_table);
-    time_t cur_time;
-    time(&cur_time);
-    printf("he");
-    fflush(stdout);
+    GHashTableIter iter;
+    gpointer key, value;
     
-    while (node != NULL) {
-        if (!node->data) {
-            node = node->next;
-            break;
-        }
-        printf("%s\n", (char*)node->data);
-        fflush(stdout);
-        char *key = (char*)node->data;
-        break;
-        cache_content_t *cache_content = g_hash_table_lookup(cache->cache_table, key);
-
-        if (abs(cache_content->time - cur_time) > 10) {
-            cache_content_destroy(cache_content);
-            g_hash_table_remove(cache->cache_table, key);
-        }
+    g_hash_table_iter_init(&iter, cache->cache_table);
+    
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        cache_content_t *cache_content = (cache_content_t*)value;
         
-        node = node->next;
+        // Если нужны блокировки
+        pthread_rwlock_wrlock(&cache_content->lock);
+        
+        // Уничтожаем содержимое
+        cache_content_destroy(cache_content);
+        
+        // Уничтожаем мьютекс (если он не уничтожается в cache_content_destroy)
+        
+        
+        // Удаляем из таблицы
+        g_hash_table_iter_remove(&iter);
     }
 }
+
+
+int cache_check_inval(cache_t *cache, char *key) {
+    cache_content_t *cache_content = (cache_content_t*)(cache_get(cache, key));
+
+    time_t cur_time;
+    time(&cur_time);
+    if ((cur_time - cache_content->time)  > 5) {
+        return 1;
+    } 
+
+    return 0;
+}
+
+void cache_remove(cache_t *cache, char *key) {
+    g_hash_table_steal(cache->cache_table, key);
+}
+
 
 
 void cache_destroy(cache_t *cache) {
@@ -133,28 +143,25 @@ int cache_place_check(cache_t *cache, size_t buffer_size) {
     if (err != 0) {
         log_message(FATAL, "cache unlock mutex fail");
     }
-    printf("%d %s \n", cache_size_get(cache), "cache size sum");
+    size_t cache_size = cache_size_get(cache);
 
-     
-
+    printf("%d %s\n", cache_size, "CACHE");
+    
     if (buffer_size > cache->cache_max_size) {
+        printf("\n%d %s \n", buffer_size, "buffer");
+        printf("\n%d %s \n", cache->cache_max_size, "max");
+
+        err = pthread_mutex_unlock(&cache->mutex);
+        if (err != 0) {
+            log_message(FATAL, "cache unlock mutex fail");
+        }
         return -1;
     }
-
-    /*
-    if (buffer_size + cache->cache_size > cache->cache_max_size) {
-        cache_cleaner(cache);
-        if (buffer_size + cache->cache_size > cache->cache_max_size) {
-            return -1;
-        }
-    }
-    */
 
     err = pthread_mutex_unlock(&cache->mutex);
     if (err != 0) {
         log_message(FATAL, "cache unlock mutex fail");
     }
-
 }
 
 

@@ -17,6 +17,7 @@ typedef struct cache_content_t {
     size_t buffer_size;
     time_t time;
     pthread_rwlock_t lock;
+    int destroyed;
 }cache_content_t;
 
 cache_t *cache_create(size_t cache_max_size);
@@ -32,3 +33,7 @@ int cache_contains(cache_t *cache, char *url);
 cache_content_t *cache_content_create(char *buffer, size_t size);
 
 int cache_place_check(cache_t *cache, size_t buffer_size);
+
+int cache_check_inval(cache_t *cache, char *key);
+
+void cache_remove(cache_t *cache, char *key);
