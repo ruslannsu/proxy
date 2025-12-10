@@ -80,6 +80,9 @@ int cache_check_inval(cache_t *cache, char *key) {
 }
 
 void cache_remove(cache_t *cache, char *key) {
+    cache_content_t *cache_content = (cache_content_t*)(cache_get(cache, key));
+    free(cache_content->buffer);
+    free(cache_content);
     g_hash_table_steal(cache->cache_table, key);
     
 }

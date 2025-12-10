@@ -378,17 +378,18 @@ static void client_task_cache(void *args) {
     //просто сделал сверху проверку на ttl, надо бы с нижним кастом соединить как-то...
     
 
+    
     char *path_key = g_strndup(path_buf, path_len);
-
-
+    int valid = 1;
     if (cache_contains(proxy->cache, path_key)) {
         if (cache_check_inval(proxy->cache, path_key)) {
             cache_remove(proxy->cache, path_key);
+            valid = 0;
         }
     }
 
 
-    if (cache_contains(proxy->cache, path_key)) {
+    if (cache_contains(proxy->cache, path_key) && valid) {
         cache_content_t *cache_content = (cache_content_t*)(cache_get(proxy->cache, path_key));
 
         err = pthread_mutex_unlock(&proxy->cache->mutex);
@@ -514,6 +515,8 @@ static void client_task_cache(void *args) {
         close(sockets.client_socket);
         close(ups_sock);
     }
+    
+    
 }
 
 
