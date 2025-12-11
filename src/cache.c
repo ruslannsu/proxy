@@ -72,7 +72,7 @@ int cache_check_inval(cache_t *cache, char *key) {
 
     time_t cur_time;
     time(&cur_time);
-    if ((cur_time - cache_content->time)  > 5) {
+    if ((cur_time - cache_content->time)  > 1) {
         return 1;
     } 
 

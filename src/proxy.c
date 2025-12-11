@@ -385,9 +385,10 @@ static void client_task_cache(void *args) {
         if (cache_check_inval(proxy->cache, path_key)) {
             cache_remove(proxy->cache, path_key);
             valid = 0;
+            printf("there there");
         }
     }
-
+    //надежнее будет мертвые структуры инвалидированных кэшей куда-то складывать и чистить в отдельном потоке(иначе преимущество рид лока сильно теряется)
 
     if (cache_contains(proxy->cache, path_key) && valid) {
         cache_content_t *cache_content = (cache_content_t*)(cache_get(proxy->cache, path_key));
@@ -436,6 +437,8 @@ static void client_task_cache(void *args) {
         err = upstream_connection_create(ups_sock, ip_buff);
         if (err != 0) {
             log_message(ERROR, "UPSTREAM CONNECTION FAILED");
+            close(ups_sock);
+            return;
         }
 
         //здесь все очень плохо...(исправлено)
