@@ -388,8 +388,7 @@ static void client_task_cache(void *args) {
             printf("there there");
         }
     }
-    //надежнее будет мертвые структуры инвалидированных кэшей куда-то складывать и чистить в отдельном потоке(иначе преимущество рид лока сильно теряется)
-
+    //возможно для надежности стоит добавить счетчик ссылок на каждый cache content(есть 0.000001 вероятность нехорошей ситуации)
     if (cache_contains(proxy->cache, path_key) && valid) {
         cache_content_t *cache_content = (cache_content_t*)(cache_get(proxy->cache, path_key));
 
@@ -494,7 +493,6 @@ static void client_task_cache(void *args) {
             close(sockets.client_socket);
             close(ups_sock);
             cache_content->destroyed = 1;
-            free(cache_content->buffer);
             err = pthread_rwlock_unlock(&cache_content->lock);
             if (err != 0) {
                 log_message(FATAL, "err");
