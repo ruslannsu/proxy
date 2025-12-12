@@ -462,7 +462,6 @@ static void client_task_cache(void *args) {
 
         //TODO: рв лочку можно в кэш адд унести
         err = cache_add(proxy->cache, path_key, cache_content);
-        
         err = pthread_mutex_unlock(&proxy->cache->mutex);
         if (err != 0) {
             log_message(FATAL, "cache unlock mutex fail");
@@ -471,8 +470,6 @@ static void client_task_cache(void *args) {
         char *http_response;
         size_t http_response_size;
         
-        
-
         err = http_response_parse(ups_sock, &cache_content->buffer, &http_response_size);
         if (err != 0) {
             log_message(ERROR, "HTTP RESPONSE PARSE FAILED. IP:%s", ip_buff);
@@ -485,9 +482,7 @@ static void client_task_cache(void *args) {
         cache_content->buffer_size = http_response_size;
         proxy->cache->cache_size += http_response_size;
 
-        
-
-
+    
         err = cache_place_check(proxy->cache, http_response_size);
         if (err != 0)  {
             close(sockets.client_socket);

@@ -3,6 +3,13 @@
 #include <proxy.h>
 #include <unistd.h>
 #include <getopt.h>
+#define RED     "\033[1;31m"
+#define YELLOW  "\033[1;33m"
+#define GREEN   "\033[1;32m"
+#define CYAN    "\033[1;36m"
+#define BLUE    "\033[1;34m"
+#define MAGENTA "\033[1;35m"
+#define RESET   "\033[0m"
 
 static struct option options[] = {
     {"help", no_argument, 0 ,'h'},
@@ -25,6 +32,21 @@ int main(int argc, char *argv[]) {
     if (!logger) {
         return -1;
     }
+
+    printf(RED     "\\"                                     YELLOW ".-'''-."                                  GREEN "                                 \n");
+    printf(RED     " "                                     YELLOW "                                   '   _    \\"                               GREEN "                               \n");
+    printf(RED     "_________   _...._"               YELLOW "               /   /` '.   \\"                             GREEN "                              \n");
+    printf(RED     "\\        |.'      '-."           YELLOW "           .   |     \\  '"              CYAN "              .-.          .-" BLUE " \n");
+    printf(RED     " \\        .'```'.    '. .-,.--." YELLOW " |   '      |  '"              CYAN "              \\ \\        / /" BLUE " \n");
+    printf(RED     "  \\      |       \\     \\|  .-. |" YELLOW "\\    \\     / /____"     CYAN "     _____  \\ \\      / /"  BLUE "  \n");
+    printf(RED     "   |     |        |    || |  | |" YELLOW " `.   ` ..' /`.   \\"  CYAN "  .'    /   \\ \\    / /"   BLUE "   \n");
+    printf(RED     "   |      \\      /    . | |  | |" YELLOW "    '-...-'`   `.  `'    .'"     CYAN "     \\ \\  / /"    BLUE "    \n");
+    printf(RED     "   |     |\\`'-.-'   .'  | |  '-" YELLOW "                  '.    .'"        CYAN "        \\ `  /"     BLUE "     \n");
+    printf(RED     "   |     | '-....-'`    | |"      YELLOW "                      .'     `."        CYAN "        \\  /"      BLUE "      \n");
+    printf(RED     "  .'     '.             | |"      YELLOW "                    .'  .'`.   `."      CYAN "      / /"       BLUE "       \n");
+    printf(RED     "'-----------'           |_|"      YELLOW "                  .'   /    `.   `.|`-' /"        BLUE "        \n");
+    printf(RED     " "                                   YELLOW "                '----'       '----''..'"       BLUE "       \n" RESET);
+    
 
     int port = DEFAULT_PORT;
     size_t thread_pool_size = DEFAULT_THREAD_POOL_SIZE;
