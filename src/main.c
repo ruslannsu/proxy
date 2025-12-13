@@ -16,7 +16,8 @@ static struct option options[] = {
     {"port", required_argument, 0, 'p'},
     {"threads", required_argument, 0, 't'},
     {"mode", required_argument, 0, 'm'},
-    {"size", required_argument, 0, 's'}
+    {"size", required_argument, 0, 's'},
+    {"ttl", required_argument, 0, 'l'}
 
 };
 
@@ -52,9 +53,10 @@ int main(int argc, char *argv[]) {
     size_t thread_pool_size = DEFAULT_THREAD_POOL_SIZE;
     int mode = CACHE_MODE;
     size_t cache_size = 100000000000;
+    size_t cache_ttl = 5;
     
     int opt;
-    while ((opt = getopt_long(argc, argv, "s:m:p:t:h", options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "l:s:m:p:t:h", options, NULL)) != -1) {
         switch (opt) {
             case 'h':  
                 help_print();
@@ -79,15 +81,17 @@ int main(int argc, char *argv[]) {
             case 's':
                 cache_size = atoi(optarg);
                 break;
+            case 'l':
+                cache_ttl = atoi(optarg);
+                break;
         }   
     }
 
-    printf("%d\n -mode", mode);
+
+    printf("%d\n ", cache_ttl);
     log_message(INFO, "PROCESS START");
 
-    printf("%d", thread_pool_size);
-
-    proxy_t *proxy = proxy_create(port, thread_pool_size, mode, cache_size);
+    proxy_t *proxy = proxy_create(port, thread_pool_size, mode, cache_size, cache_ttl);
     if (!proxy) {
         log_message(ERROR, "PROXY CREATE FAILED");
     }

@@ -21,7 +21,7 @@ void shutdown_handler(int sig) {
     process_status = SHUTDOWN;    
 }
  
-proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_max_size) {
+proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_max_size, size_t cache_ttl) {
     int err;
 
     proxy_t *proxy = malloc(sizeof(proxy_t));
@@ -32,7 +32,7 @@ proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_
     proxy->mode = mode;
 
     if (mode == CACHE_MODE) {
-        proxy->cache = cache_create(cache_max_size);
+        proxy->cache = cache_create(cache_max_size, cache_ttl);
     }
     
     if (mode == UPSTREAM_MODE) {
@@ -410,11 +410,7 @@ static void client_task_cache(void *args) {
 
         char *buffer = cache_content->buffer;
         size_t buffer_size = cache_content->buffer_size;
-
-
-        printf("%d %s\n", buffer_size, "buffer size");
-        fflush(stdout);
-
+    
         err = send(sockets.client_socket, buffer, buffer_size, 0);
         if (err == -1) {
             log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
@@ -482,7 +478,6 @@ static void client_task_cache(void *args) {
         cache_content->buffer_size = http_response_size;
         proxy->cache->cache_size += http_response_size;
 
-    
         err = cache_place_check(proxy->cache, http_response_size);
         if (err != 0)  {
             close(sockets.client_socket);

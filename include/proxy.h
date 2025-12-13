@@ -40,11 +40,9 @@ typedef struct http_parse_t {
 
 } http_parse_t;
 
-proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache);
+proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache, size_t cache_ttl);
 
 void proxy_run(proxy_t *proxy);
 
 //TODO:
 void proxy_destroy(proxy_t *proxy);
-
-

@@ -5,7 +5,7 @@
 
 pthread_mutex_t alive_lock = PTHREAD_MUTEX_INITIALIZER;
 
-cache_t *cache_create(size_t cache_max_size) {
+cache_t *cache_create(size_t cache_max_size, size_t cache_ttl) {
     int err;
 
     cache_t *cache = malloc(sizeof(cache_t));
@@ -16,6 +16,7 @@ cache_t *cache_create(size_t cache_max_size) {
     cache->cache_size = 0;
 
     cache->cache_max_size = cache_max_size;
+    cache->cache_ttl = cache_ttl;
 
     err = pthread_mutex_init(&cache->mutex, PTHREAD_PROCESS_PRIVATE);
     if (err != 0) {
@@ -72,7 +73,7 @@ int cache_check_inval(cache_t *cache, char *key) {
 
     time_t cur_time;
     time(&cur_time);
-    if ((cur_time - cache_content->time)  > 1) {
+    if ((cur_time - cache_content->time)  > cache->cache_ttl) {
         return 1;
     } 
 
@@ -151,13 +152,8 @@ int cache_place_check(cache_t *cache, size_t buffer_size) {
         log_message(FATAL, "cache unlock mutex fail");
     }
     size_t cache_size = cache_size_get(cache);
-
-    printf("%d %s\n", cache_size, "CACHE");
     
     if (buffer_size > cache->cache_max_size) {
-        printf("\n%d %s \n", buffer_size, "buffer");
-        printf("\n%d %s \n", cache->cache_max_size, "max");
-
         err = pthread_mutex_unlock(&cache->mutex);
         if (err != 0) {
             log_message(FATAL, "cache unlock mutex fail");
@@ -171,8 +167,6 @@ int cache_place_check(cache_t *cache, size_t buffer_size) {
     }
 }
 
-
-//TODO
 int cache_add(cache_t *cache, char *url, cache_content_t *cache_content) {
     g_hash_table_insert(cache->cache_table, url, cache_content);
     

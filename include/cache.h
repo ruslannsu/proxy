@@ -9,6 +9,7 @@ typedef struct cache_t {
     GHashTable *cache_table;
     size_t cache_size;
     size_t cache_max_size;
+    size_t cache_ttl;
     pthread_mutex_t mutex;
     pthread_mutex_t alive_lock;
 } cache_t;
@@ -23,7 +24,7 @@ typedef struct cache_content_t {
     int valid;
 }cache_content_t;
 
-cache_t *cache_create(size_t cache_max_size);
+cache_t *cache_create(size_t cache_max_size, size_t cache_ttl);
 
 void cache_destroy(cache_t *cache);
 
