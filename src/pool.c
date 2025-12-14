@@ -25,8 +25,6 @@ thread_pool_t *thread_pool_create(size_t size) {
 }
 
 static void *reader_routine(void *args) {
-    int err;
-
     task_queue_t *queue = (task_queue_t*)(args);
     while (1) {   
         

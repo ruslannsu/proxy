@@ -48,6 +48,7 @@ static void *realloc_queue(task_queue_t *queue) {
     if (!queue->tasks) {
         log_message(FATAL, "QUEUE: REALLOC QUEUE FAILED");
     }
+    return NULL;
 } 
 
 int task_queue_add(task_queue_t *queue, task_t task) {
@@ -90,7 +91,7 @@ task_t task_queue_get(task_queue_t *queue) {
         log_message(FATAL, "QUEUE ADD FAILED: MUTEX LOCK FAILED. ERR: %s", strerror(err));
     }
 
-    task_t task;
+    task_t task = {NULL, NULL};
     
     while (queue_is_empty(queue) && (!queue->queue_shutdown)) {
         pthread_cond_wait(&queue->condvar, &queue->mutex);
@@ -119,8 +120,6 @@ task_t task_queue_get(task_queue_t *queue) {
 }
 
 void task_queue_destroy(task_queue_t *queue) {
-    int err;
-
     //TODO потом
     /*
     err = pthread_mutex_destroy(&queue->mutex);

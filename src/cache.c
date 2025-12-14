@@ -73,7 +73,7 @@ int cache_check_inval(cache_t *cache, char *key) {
 
     time_t cur_time;
     time(&cur_time);
-    if ((cur_time - cache_content->time)  > cache->cache_ttl) {
+    if ((cur_time - cache_content->time)  > (int)(cache->cache_ttl)) {
         return 1;
     } 
 
@@ -92,7 +92,6 @@ void cache_remove(cache_t *cache, char *key) {
 void cache_cleaner(cache_t *cache) {
     GList *keys = g_hash_table_get_keys(cache->cache_table);
     GList *node = keys;
-    size_t cache_size = 0;
     
     while (node != NULL) {
         if (node->data != NULL) {
@@ -107,7 +106,6 @@ void cache_cleaner(cache_t *cache) {
     }
     
     g_list_free(keys); 
-    return cache_size;
 }
 
 
@@ -122,26 +120,7 @@ int cache_contains(cache_t *cache, char *url) {
     
 }
 
-static size_t cache_size_get(cache_t *cache) {
-    GList *keys = g_hash_table_get_keys(cache->cache_table);
-    GList *node = keys;
-    size_t cache_size = 0;
-    
-    while (node != NULL) {
-        if (node->data != NULL) {
-            char *key = (char*)node->data;
-            cache_content_t *cache_content = g_hash_table_lookup(cache->cache_table, key);
-            
-            if (cache_content != NULL) {
-                cache_size += cache_content->buffer_size;
-            }
-        }
-        node = node->next;
-    }
-    
-    g_list_free(keys); 
-    return cache_size;
-}
+
 
 int cache_place_check(cache_t *cache, size_t buffer_size) {
     
@@ -151,8 +130,7 @@ int cache_place_check(cache_t *cache, size_t buffer_size) {
     if (err != 0) {
         log_message(FATAL, "cache unlock mutex fail");
     }
-    size_t cache_size = cache_size_get(cache);
-    
+
     if (buffer_size > cache->cache_max_size) {
         err = pthread_mutex_unlock(&cache->mutex);
         if (err != 0) {
@@ -165,6 +143,7 @@ int cache_place_check(cache_t *cache, size_t buffer_size) {
     if (err != 0) {
         log_message(FATAL, "cache unlock mutex fail");
     }
+    return 0;
 }
 
 int cache_add(cache_t *cache, char *url, cache_content_t *cache_content) {

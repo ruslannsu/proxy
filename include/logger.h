@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>  
 
 typedef enum log_level_t {
     INFO,

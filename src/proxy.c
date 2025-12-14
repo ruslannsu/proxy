@@ -16,8 +16,7 @@
 
 int process_status = RUN;
 
-//TODO: вообще так не круто обработчик переназначать, надо на sigaction
-void shutdown_handler(int sig) {
+void shutdown_handler() {
     process_status = SHUTDOWN;    
 }
  
@@ -78,7 +77,7 @@ proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_
         
     }
 
-    err = signal(SIGINT, shutdown_handler);
+    signal(SIGINT, shutdown_handler);
     
     log_message(INFO, "PROXY: CREATION COMPLETE");
 
@@ -89,7 +88,6 @@ static int parse_http_headers(int client_socket, http_parse_t *parse) {
     ssize_t rret;
     size_t buflen = 0, prevbuflen = 0;
     size_t num_headers;
-    size_t pathlen;
     int pret, minor_version;
 
     while (1) {
@@ -128,13 +126,12 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
         log_message(FATAL, "MEM ALLOCATION FOR RESP BUFFER FAILED");
     }
 
-    char *method, *path;
-    char *msg;
+    const char *msg;
     size_t msg_len;
     int status;
     int pret, minor_version;
     struct phr_header headers[100];
-    size_t buflen = 0, prevbuflen = 0, method_len, path_len, num_headers;
+    size_t buflen = 0, prevbuflen = 0, num_headers;
     ssize_t rret;
 
     while (1) {
@@ -175,7 +172,7 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
 
     int err;
     
-    if ((http_body_size > size) && (http_body_size >= 0)) {
+    if (http_body_size > size) {
         buf = realloc(buf, http_body_size);
         if (!buf) {
             log_message(FATAL, "HTTP RESPONSE PARSE FAILED, CAN NOT REALLOC BUF. ERRNO: %s ", strerror(errno));
@@ -290,7 +287,7 @@ static void client_task(void *args) {
     }
 
     struct phr_header *headers = http_parse.headers;
-    char *path = http_parse.path;
+    const char *path = http_parse.path;
     int path_len = http_parse.path_len;
 
     char ip_buff[INET_ADDRSTRLEN];
@@ -340,8 +337,6 @@ static void client_task(void *args) {
         return;
     }
     
-    size_t print_len = http_response_size;
-
     free(http_response);
     close(sockets.client_socket);
     close(ups_sock);
@@ -363,7 +358,7 @@ static void client_task_cache(void *args) {
     }
 
     struct phr_header *headers = http_parse.headers;
-    char *path = http_parse.path;
+    const char *path = http_parse.path;
     int path_len = http_parse.path_len;
 
     char ip_buff[INET_ADDRSTRLEN];
@@ -463,7 +458,6 @@ static void client_task_cache(void *args) {
             log_message(FATAL, "cache unlock mutex fail");
         }
 
-        char *http_response;
         size_t http_response_size;
         
         err = http_response_parse(ups_sock, &cache_content->buffer, &http_response_size);
@@ -512,7 +506,6 @@ void proxy_run(proxy_t *proxy) {
     log_message(INFO, "PROXY: RUNNING");
     //sockets_t pairs[1024];
 
-    int err;
     struct sockaddr_in addr;
     socklen_t sock_len = sizeof(addr);
     thread_pool_run(proxy->thread_pool);
