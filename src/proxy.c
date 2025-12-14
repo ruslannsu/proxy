@@ -56,6 +56,11 @@ proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_
         log_message(FATAL, "PROXY CREATION: CANT SETSOCKOPT. ERRNO: %s", strerror(errno));
     }
 
+    err = pthread_cond_init(&proxy->condvar, NULL);
+    if (err != 0) {
+        log_message(FATAL, "TASK QUEUE CREATE FAILED. COND INIT FAILED. ERR: %s", strerror(err));
+    }
+
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
@@ -79,7 +84,6 @@ proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_
 
     return proxy;
 }
-
 
 static int parse_http_headers(int client_socket, http_parse_t *parse) {
     ssize_t rret;
@@ -374,10 +378,6 @@ static void client_task_cache(void *args) {
     if (err != 0) {
         log_message(FATAL, "CAN NOT LOCK CACHE MUTEX");
     }
-
-    //просто сделал сверху проверку на ttl, надо бы с нижним кастом соединить как-то...
-    
-
     
     char *path_key = g_strndup(path_buf, path_len);
     int valid = 1;
@@ -385,10 +385,8 @@ static void client_task_cache(void *args) {
         if (cache_check_inval(proxy->cache, path_key)) {
             cache_remove(proxy->cache, path_key);
             valid = 0;
-            printf("there there");
         }
     }
-    //возможно для надежности стоит добавить счетчик ссылок на каждый cache content(есть 0.000001 вероятность нехорошей ситуации)
     if (cache_contains(proxy->cache, path_key) && valid) {
         cache_content_t *cache_content = (cache_content_t*)(cache_get(proxy->cache, path_key));
 
@@ -421,6 +419,8 @@ static void client_task_cache(void *args) {
         if (err != 0) {
             log_message(FATAL, "rd lock failed");
         }
+
+        close(sockets.client_socket);
         
     }
     else {
@@ -496,7 +496,6 @@ static void client_task_cache(void *args) {
             log_message(FATAL, "err");
         }
         
-
         err = send(sockets.client_socket, cache_content->buffer, http_response_size, 0);
         if (err == -1) {
             log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
@@ -504,12 +503,10 @@ static void client_task_cache(void *args) {
         }
 
         close(sockets.client_socket);
-        close(ups_sock);
+        close(ups_sock);        
     }
     
-    
 }
-
 
 void proxy_run(proxy_t *proxy) {
     log_message(INFO, "PROXY: RUNNING");
@@ -522,7 +519,17 @@ void proxy_run(proxy_t *proxy) {
 
     size_t index = 0;
     while (1) {
-        int sock = accept(proxy->socket, (struct sockaddr*)&addr, &sock_len);
+
+        int sock;
+        while (1) {
+            sock = accept(proxy->socket, (struct sockaddr*)&addr, &sock_len);
+            if ((sock < 0) && (errno != EINTR)) {
+                continue;
+            }
+            break;
+        }
+
+
         if (sock < 0) { 
             log_message(ERROR, "PROXY RUNNING: CONNECTION ACCEPT ERR. ERRNO: %s", strerror(errno));
         }

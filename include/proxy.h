@@ -21,7 +21,8 @@ typedef struct proxy_t {
     int mode;
     thread_pool_t *thread_pool;
     cache_t *cache;
-    sockets_t pairs[1024];
+    sockets_t pairs[100000];
+    pthread_cond_t condvar;
 }proxy_t;
 
 typedef struct http_parse_t {

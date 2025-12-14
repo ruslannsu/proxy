@@ -87,9 +87,8 @@ int main(int argc, char *argv[]) {
         }   
     }
 
-
-    printf("%d\n ", cache_ttl);
     log_message(INFO, "PROCESS START");
+    
 
     proxy_t *proxy = proxy_create(port, thread_pool_size, mode, cache_size, cache_ttl);
     if (!proxy) {
