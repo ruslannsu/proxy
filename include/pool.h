@@ -8,7 +8,7 @@ typedef struct thread_pool_t {
     pthread_t *threads;
     size_t thread_pool_size;
     task_queue_t *task_queue;
-    
+
 }thread_pool_t;
 
 thread_pool_t *thread_pool_create(size_t size);

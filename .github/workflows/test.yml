@@ -21,6 +21,8 @@ jobs:
           echo "init"
           sudo apt-get update
           sudo apt-get install -y gcc make
+          sudo apt-get install -y libglib2.0-dev 
+          sudo apt-get install -y timelimit
 
       - name: build
         run: |
@@ -28,11 +30,14 @@ jobs:
 
       - name: run proxy
         run: |
-          timeout --signal=INT 30s ./build/proxy --threads 110 --mode cache --port 8080
+          timelimit -t 30 -s 2 -T 100 ./build/proxy --threads 110 --mode cache --port 8080 &
+
 
       - name: run test
         run: |
-          .tests/4-parallel-clients.sh --port 8080 --url http://xcal1.vodafone.co.uk/5MB.zip --requests 100  --timeout 70
+          cd tests
+          ./4-parallel-clients.sh --port 8080 --url http://xcal1.vodafone.co.uk/5MB.zip --requests 100  --timeout 70
+          ./2-concurrent-batches.sh --port 8080 --url http://xcal1.vodafone.co.uk/5MB.zip --requests 50 --timeout 30 --concurrency 25
 
 
 
