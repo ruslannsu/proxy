@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>  
+#include <unistd.h>
 
 typedef enum log_level_t {
     INFO,
@@ -19,7 +19,7 @@ typedef struct logger_t {
 extern logger_t *logger;
 
 void logger_init(char *file_path, log_level_t log_level);
- 
+
 
 void log_message(log_level_t level, char *format, ...);
 

@@ -47,26 +47,26 @@ int main(int argc, char *argv[]) {
     printf(RED     "  .'     '.             | |"      YELLOW "                    .'  .'`.   `."      CYAN "      / /"       BLUE "       \n");
     printf(RED     "'-----------'           |_|"      YELLOW "                  .'   /    `.   `.|`-' /"        BLUE "        \n");
     printf(RED     " "                                   YELLOW "                '----'       '----''..'"       BLUE "       \n" RESET);
-    
+
 
     int port = DEFAULT_PORT;
     size_t thread_pool_size = DEFAULT_THREAD_POOL_SIZE;
     int mode = CACHE_MODE;
     size_t cache_size = 100000000000;
     size_t cache_ttl = 5;
-    
+
     int opt;
     while ((opt = getopt_long(argc, argv, "l:s:m:p:t:h", options, NULL)) != -1) {
         switch (opt) {
-            case 'h':  
+            case 'h':
                 help_print();
                 break;
             case 'p':
-                port = atoi(optarg);  
+                port = atoi(optarg);
                 break;
             case 't':
-                thread_pool_size = atoi(optarg);  
-                break; 
+                thread_pool_size = atoi(optarg);
+                break;
             case 'm':
                 if (!strcmp(optarg, "upstream")) {
                     mode = UPSTREAM_MODE;
@@ -84,17 +84,17 @@ int main(int argc, char *argv[]) {
             case 'l':
                 cache_ttl = atoi(optarg);
                 break;
-        }   
+        }
     }
 
     log_message(INFO, "PROCESS START");
-    
+
 
     proxy_t *proxy = proxy_create(port, thread_pool_size, mode, cache_size, cache_ttl);
     if (!proxy) {
         log_message(ERROR, "PROXY CREATE FAILED");
     }
-    
+
     proxy_run(proxy);
 
     proxy_destroy(proxy);

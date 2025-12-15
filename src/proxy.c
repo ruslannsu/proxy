@@ -10,16 +10,16 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <unistd.h>
-#include <netdb.h>  
+#include <netdb.h>
 #include <signal.h>
 #include <string.h>
 
 int process_status = RUN;
 
 void shutdown_handler() {
-    process_status = SHUTDOWN;    
+    process_status = SHUTDOWN;
 }
- 
+
 proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_max_size, size_t cache_ttl) {
     int err;
 
@@ -27,13 +27,13 @@ proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_
     if (!proxy) {
         log_message(FATAL, "PROXY CREATION: BAD ALLOC. ERRNO: %s", strerror(errno));
     }
-    
+
     proxy->mode = mode;
 
     if (mode == CACHE_MODE) {
         proxy->cache = cache_create(cache_max_size, cache_ttl);
     }
-    
+
     if (mode == UPSTREAM_MODE) {
         proxy->cache = NULL;
     }
@@ -42,7 +42,7 @@ proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_
     if (!proxy->thread_pool) {
         log_message(FATAL, "PROXY CREATION: THREAD POOL CREATION FAILED");
     }
- 
+
     proxy->socket = socket(AF_INET, SOCK_STREAM, 0);
     if (proxy->socket == -1) {
         log_message(ERROR, "PROXY CREATION: CANT CREATE SOCK. ERRNO: %s ", strerror(errno));
@@ -64,7 +64,7 @@ proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(port);
-    
+
     err = bind(proxy->socket, (struct sockaddr*)&addr, sizeof(addr));
     if (err != 0) {
         log_message(FATAL, "PROXY CREATION: CANT BIND SOCK. ERRNO: %s", strerror(errno));
@@ -74,11 +74,11 @@ proxy_t *proxy_create(int port, size_t thread_pool_size, int mode, size_t cache_
     err = listen(proxy->socket, 5000);
     if (err < 0) {
         log_message(FATAL, "PROXY DO NOT LISTEN");
-        
+
     }
 
     signal(SIGINT, shutdown_handler);
-    
+
     log_message(INFO, "PROXY: CREATION COMPLETE");
 
     return proxy;
@@ -100,7 +100,7 @@ static int parse_http_headers(int client_socket, http_parse_t *parse) {
         pret = phr_parse_request(parse->buf, buflen, &parse->method, &parse->method_len, &parse->path, &parse->path_len,
                                 &minor_version, parse->headers, &num_headers, prevbuflen);
         if (pret > 0)
-            break; 
+            break;
         else if (pret == -1)
             return -1;
 
@@ -141,11 +141,11 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
         prevbuflen = buflen;
         buflen += rret;
         num_headers = sizeof(headers) / sizeof(headers[0]);
-        
+
         pret = phr_parse_response(buf, buflen, &minor_version, &status, &msg, &msg_len, headers, &num_headers, prevbuflen);
 
         if (pret > 0)
-            break; 
+            break;
         else if (pret == -1)
             return -1;
 
@@ -158,12 +158,12 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
     for (size_t i = 0; i != num_headers; ++i) {
         if (strncmp(headers[i].name, "Content-Length", 14) == 0) {
             size_t val_size = headers[i].value_len;
-            char val_buf[val_size + 1];               
+            char val_buf[val_size + 1];
             memcpy(val_buf, headers[i].value, val_size);
-            val_buf[val_size] = '\0';                
+            val_buf[val_size] = '\0';
             http_body_size = atoi(val_buf);
             break;
-        }   
+        }
     }
 
     size_t bytes_left = http_body_size - (buflen - pret);
@@ -171,7 +171,7 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
     size_t read_bytes_count = 1024;
 
     int err;
-    
+
     if (http_body_size > size) {
         buf = realloc(buf, http_body_size);
         if (!buf) {
@@ -187,7 +187,7 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
         if ((bytes_left - bytes_count) > read_bytes_count) {
             read_bytes_count = bytes_left - bytes_count;
         }
-        
+
         err = read(sock, buf + buflen + bytes_count, read_bytes_count);
         if (err < 0) {
             break;
@@ -195,24 +195,24 @@ static int http_response_parse(int sock, char **http_response, size_t *http_resp
 
         bytes_count += err;
     }
-    
+
     *http_response = buf;
     *http_response_size = http_body_size + pret;
 
     return 0;
 }
 
-static int upstream_connection_create(int ups_socket, char *ip) { 
+static int upstream_connection_create(int ups_socket, char *ip) {
     struct sockaddr_in server_addr;
     int port = 80;
-  
+
     char *ip_ = ip;
     memset(&server_addr, 0, sizeof(server_addr));
-    
+
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
     server_addr.sin_addr.s_addr = inet_addr(ip_);
-    
+
     int err;
 
     err = connect(ups_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
@@ -222,46 +222,46 @@ static int upstream_connection_create(int ups_socket, char *ip) {
     }
 
     return 0;
-    
+
 }
 
 
 void resolve_hostname(const char *hostname, size_t len, char ip[]) {
     char clean[256];
     size_t actual_len = len;
-    
+
     if (len == 0) {
         actual_len = strlen(hostname);
     }
-    
+
     size_t i;
-    
+
     for (i = 0; i < actual_len && i < sizeof(clean) - 1; ++i) {
-        if (hostname[i] >= ' ' && hostname[i] <= '~') { 
+        if (hostname[i] >= ' ' && hostname[i] <= '~') {
             clean[i] = hostname[i];
-        } 
+        }
         else {
-            break; 
+            break;
         }
     }
     clean[i] = '\0';
-    
+
     while (i > 0 && (clean[i-1] == ' ' || clean[i-1] == '\t')) {
         clean[--i] = '\0';
     }
-    
+
     struct addrinfo hints, *result, *rp;
     char ip_str[INET_ADDRSTRLEN];
-    
+
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;    
-    hints.ai_socktype = SOCK_STREAM; 
-    
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
     int status = getaddrinfo(clean, NULL, &hints, &result);
     if (status != 0) {
         return;
     }
-    
+
     for (rp = result; rp != NULL; rp = rp->ai_next) {
         if (rp->ai_family == AF_INET) {
             struct sockaddr_in *addr = (struct sockaddr_in*)rp->ai_addr;
@@ -270,7 +270,7 @@ void resolve_hostname(const char *hostname, size_t len, char ip[]) {
             break;
         }
     }
-    
+
     freeaddrinfo(result);
 }
 //TODO:перед каждым return надо чистить ресурсы
@@ -293,7 +293,7 @@ static void client_task(void *args) {
     char ip_buff[INET_ADDRSTRLEN];
     resolve_hostname(headers[0].value, (int)headers[0].value_len, ip_buff);
     ip_buff[INET_ADDRSTRLEN] = '\0';
-    
+
     int ups_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (ups_sock < 0) {
         log_message(ERROR, "UPS SOCKET CREATION FAILED");
@@ -309,7 +309,7 @@ static void client_task(void *args) {
     char path_buf[path_len + 1];
     path_buf[path_len] = '\0';
     memcpy(path_buf, path, path_len);
-    
+
     char request[4096];
     int req_len = snprintf(request, 4096,
     "GET %s HTTP/1.0\r\n"
@@ -322,7 +322,7 @@ static void client_task(void *args) {
         log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
         return;
     }
-   
+
 
     char *http_response;
     size_t http_response_size;
@@ -336,7 +336,7 @@ static void client_task(void *args) {
         log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
         return;
     }
-    
+
     free(http_response);
     close(sockets.client_socket);
     close(ups_sock);
@@ -368,12 +368,12 @@ static void client_task_cache(void *args) {
     char path_buf[path_len + 1];
     path_buf[path_len] = '\0';
     memcpy(path_buf, path, path_len);
-    
+
     err = pthread_mutex_lock(&proxy->cache->mutex);
     if (err != 0) {
         log_message(FATAL, "CAN NOT LOCK CACHE MUTEX");
     }
-    
+
     char *path_key = g_strndup(path_buf, path_len);
     int valid = 1;
     if (cache_contains(proxy->cache, path_key)) {
@@ -403,7 +403,7 @@ static void client_task_cache(void *args) {
 
         char *buffer = cache_content->buffer;
         size_t buffer_size = cache_content->buffer_size;
-    
+
         err = send(sockets.client_socket, buffer, buffer_size, 0);
         if (err == -1) {
             log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
@@ -416,7 +416,7 @@ static void client_task_cache(void *args) {
         }
 
         close(sockets.client_socket);
-        
+
     }
     else {
         int ups_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -438,7 +438,7 @@ static void client_task_cache(void *args) {
         "Connection: close\r\n"
         "\r\n",
         path_key);
-          
+
         err = send(ups_sock, request, req_len, 0);
         if (err == -1) {
             log_message(ERROR, "SEND TO UPSTREAM FAILED, ERRNO: %s", strerror(errno));
@@ -459,16 +459,16 @@ static void client_task_cache(void *args) {
         }
 
         size_t http_response_size;
-        
+
         err = http_response_parse(ups_sock, &cache_content->buffer, &http_response_size);
         if (err != 0) {
             log_message(ERROR, "HTTP RESPONSE PARSE FAILED. IP:%s", ip_buff);
         }
-        
+
         time(&cache_content->time);
 
         //cache_content->destroyed = 1;
-            
+
         cache_content->buffer_size = http_response_size;
         proxy->cache->cache_size += http_response_size;
 
@@ -481,7 +481,7 @@ static void client_task_cache(void *args) {
             if (err != 0) {
                 log_message(FATAL, "err");
             }
-            
+
             return;
         }
 
@@ -489,7 +489,7 @@ static void client_task_cache(void *args) {
         if (err != 0) {
             log_message(FATAL, "err");
         }
-        
+
         err = send(sockets.client_socket, cache_content->buffer, http_response_size, 0);
         if (err == -1) {
             log_message(ERROR, "SEND TO CLIENT FAILED, ERRNO: %s", strerror(errno));
@@ -497,9 +497,9 @@ static void client_task_cache(void *args) {
         }
 
         close(sockets.client_socket);
-        close(ups_sock);        
+        close(ups_sock);
     }
-    
+
 }
 
 void proxy_run(proxy_t *proxy) {
@@ -523,7 +523,7 @@ void proxy_run(proxy_t *proxy) {
         }
 
 
-        if (sock < 0) { 
+        if (sock < 0) {
             log_message(ERROR, "PROXY RUNNING: CONNECTION ACCEPT ERR. ERRNO: %s", strerror(errno));
         }
 
@@ -531,7 +531,7 @@ void proxy_run(proxy_t *proxy) {
             log_message(INFO, "PROXY STOPPED(SHUTDOWN)");
             break;
         }
-        
+
         log_message(INFO, "PROXY NEW CONNECTION WITH ADDR: %s, PORT: %d", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
         proxy->pairs[index].client_socket = sock;
@@ -553,7 +553,7 @@ void proxy_run(proxy_t *proxy) {
     }
 
     log_message(INFO, "PROXY: STOP RUNNING");
-    
+
 }
 
 void proxy_destroy(proxy_t *proxy) {

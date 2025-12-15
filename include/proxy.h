@@ -27,7 +27,7 @@ typedef struct proxy_t {
 
 typedef struct http_parse_t {
     char buf[4096];
-    const char *method; 
+    const char *method;
     const char *path;
     int pret;
     int minor_version;

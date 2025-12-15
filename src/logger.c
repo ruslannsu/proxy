@@ -20,7 +20,7 @@ void logger_init(char *file_path, log_level_t log_level) {
     if (logger->log_file == -1) {
         exit(1);
     }
-    
+
 }
 
 void log_message(log_level_t level, char *format, ...) {
@@ -35,12 +35,12 @@ void log_message(log_level_t level, char *format, ...) {
     char log_complete_message[2048];
     switch(level) {
         case INFO:
-            snprintf(log_complete_message, sizeof(log_complete_message), "[INFO] %s \n", log_message);            
+            snprintf(log_complete_message, sizeof(log_complete_message), "[INFO] %s \n", log_message);
             write(logger->log_file, log_complete_message, strlen(log_complete_message));
             break;
 
         case FATAL:
-            snprintf(log_complete_message, sizeof(log_complete_message), "[FATAL] %s \n", log_message);            
+            snprintf(log_complete_message, sizeof(log_complete_message), "[FATAL] %s \n", log_message);
             write(logger->log_file, log_complete_message, strlen(log_complete_message));
 
             exit(1);
@@ -48,17 +48,17 @@ void log_message(log_level_t level, char *format, ...) {
             break;
 
         case DEBUG:
-            snprintf(log_complete_message, sizeof(log_complete_message), "[DEBUG] %s \n", log_message);            
+            snprintf(log_complete_message, sizeof(log_complete_message), "[DEBUG] %s \n", log_message);
             write(logger->log_file, log_complete_message, strlen(log_complete_message));
-            break; 
-        
+            break;
+
         case ERROR:
-            snprintf(log_complete_message, sizeof(log_complete_message), "[ERROR] %s \n", log_message);            
+            snprintf(log_complete_message, sizeof(log_complete_message), "[ERROR] %s \n", log_message);
             write(logger->log_file, log_complete_message, strlen(log_complete_message));
-       
-            break;    
+
+            break;
     }
-    
+
 }
 
 
