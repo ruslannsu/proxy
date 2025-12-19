@@ -1,7 +1,7 @@
 <h1 align="center">HTTP-proxy</h1>
 
 
-![](./.assets/arch.jpg)
+![](./.assets/archit.jpg)
 
 
 ## Building
