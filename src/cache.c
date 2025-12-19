@@ -38,7 +38,7 @@ cache_t *cache_create(size_t cache_max_size, size_t cache_ttl) {
 
 cache_content_t *cache_content_create(char *buffer, size_t size) {
     int err;
-
+    
     cache_content_t *cache_content = malloc(sizeof(cache_content_t));
     if (!cache_content) {
         log_message(FATAL, "CAN NOT CREATE CACHE TABLE. ERRNO:%s", strerror(errno));
